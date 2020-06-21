@@ -37,14 +37,16 @@ import tensorflow as tf
 import random
 debug = 0
 
-def draw_contour(df2, x,y,z): # ex: draw_contour(df_sum_in, x_label, y_label, z1_label)
-    if (debug == 1):
-        print('draw_contour')
-        print(df2, x,y,z)
-    # setup axes for contour mapping which requires a meshgrid for x,y
+def draw_contour(df2, x,y,z):
+
     Z = df2.pivot_table(index=x, columns=y, values=z).T.values
+    
+    #X_unique = np.sort(df2.spl1.unique())
+    #Y_unique = np.sort(df2.spl2.unique())
+
     X_unique = np.sort( np.unique(df2[x]) )
     Y_unique = np.sort( np.unique(df2[y]) )
+    
     X, Y = np.meshgrid(X_unique, Y_unique)
     pd.DataFrame(Z).round(3)
     from IPython.display import set_matplotlib_formats
@@ -56,7 +58,6 @@ def draw_contour(df2, x,y,z): # ex: draw_contour(df_sum_in, x_label, y_label, z1
               "ytick.color" : "green",
               "figure.figsize" : "5, 5"}
     plt.rcParams.update(params)
-    # draw the contour using matplotlib.pyplot
     fig = plt.figure()
     ax = fig.add_subplot(111)
     # Generate a contour plot
@@ -65,14 +66,6 @@ def draw_contour(df2, x,y,z): # ex: draw_contour(df_sum_in, x_label, y_label, z1
     ax.set_xlabel(x, color='red')
     _ = ax.set_ylabel(y, color='red')
     ax.set_title(z, color='red')
-
-    xs=df2[x]
-    ys=df2[y]
-    zs=df2[z]
-    
-    plt.scatter(xs,ys,c=zs)
-    name = 'plot' + z + '.png'
-    fig.savefig(name)
     
 # Define our custom loss function
 def focal_loss(y_true, y_pred):
@@ -90,11 +83,12 @@ def prediction_cutoff(model, test_features, cutoff):
     predicted = [1 if i > cutoff else 0 for i in prob1]
     return predicted
 
-def create_models(train_features, train_labels, test_features, test_labels, val_features, val_labels, algo, rn1, rn2, spl1, spl2, wt1_1, wt1_0, wt2_1, wt2_0):
+def run_model(train_features, train_labels, test_features, test_labels, val_features, val_labels, algo, rn1, rn2, spl1, spl2, wt1, wt2):
+    
     #setup model parameters, change some of the defaults based on benchmarking
     # parameter tuning: https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html
     gb_clf1 = GradientBoostingClassifier(n_estimators=20, learning_rate=0.1, max_features=5, 
-                                        max_depth=3, random_state = None, subsample = 1.0, criterion='mse', 
+                                        max_depth=3, subsample = 1.0, random_state = None, criterion='mse', 
                                         min_samples_split = 10, min_samples_leaf = 10) # random_state=0, 
 
     #since a false negative is much more likely than a false positive, we should weight them accordingly. 
@@ -102,7 +96,7 @@ def create_models(train_features, train_labels, test_features, test_labels, val_
     if (debug == 1):
         print('create M1 train_labels:',train_labels)
         print('create M1: train_labels\n', train_labels['Class'].value_counts())
-    gb_clf1.fit( train_features, train_labels, sample_weight=np.where(train_labels == 1, wt1_1, wt1_0) ) # was 5.0
+    gb_clf1.fit( train_features, train_labels, sample_weight=np.where(train_labels == 1,wt1,1.0) ) # was 5.0
 
     #use model to predict validation dataset
     predictions = gb_clf1.predict(test_features) 
@@ -133,27 +127,20 @@ def create_models(train_features, train_labels, test_features, test_labels, val_
 
     #setup model parameters, change some of the defaults based on benchmarking
     gb_clf2 = GradientBoostingClassifier(n_estimators=20, learning_rate=0.1, max_features=10, 
-                                        max_depth=3, random_state = None, subsample = 1.0, criterion='mse', 
+                                        max_depth=3, subsample = 1.0, random_state = None, criterion='mse', 
                                         min_samples_split = 10, min_samples_leaf = 10) # random_state=0, or 
 
     #since a false negative is much more likely than a false positive, we should weight them accordingly. 
     #IE Finding a true one is more important
     # note that the weights in the 2nd model are the inverse of the weights in the 1st model
-    #gb_clf2.fit( train_features, train_labels, sample_weight=np.where(train_labels == 1,wt2_1,wt2_0) ) # was 0.1
+    #gb_clf2.fit( train_features, train_labels, sample_weight=np.where(train_labels == 1,wt2,1.0) ) # was 0.1
     if (debug == 1):
         print('create M2 train_labels:', train_labels)
         print('create M2: train_labels\n', train_labels['Class'].value_counts())
-        
-        
-    #gb_clf2.fit( train_features, train_labels, sample_weight=np.where(train_labels == 1,wt2_1,wt2_0) )
-    gb_clf2.fit( train_features, train_labels, sample_weight=np.where(train_labels == 1, wt2_1, wt2_0) )
+    gb_clf2.fit( train_features, train_labels, sample_weight=np.where(train_labels == 1,1.0,wt2) )
 
-    
     #use model to predict validation dataset
     predictions = gb_clf2.predict(X2_test) 
-    return gb_clf1, gb_clf2
-
-def run_model(gb_clf1, gb_clf2, train_features, train_labels, test_features, test_labels, val_features, val_labels, algo, rn1, rn2, spl1, spl2, wt1_1, wt1_0, wt2_1, wt2_0):
 
     #-----------------------------------------------------------------------------------------------------
     # Now that we have built the 2 models from the test dataset, run the untouched validate dataset through both of them to get an unbiased result to compare against
@@ -221,7 +208,8 @@ def get_dataset():
     else:
         print("Can't change the Current Working Directory") 
 
-    df = pd.read_csv('creditcard.csv')
+    #df = pd.read_csv('creditcard.csv')
+    df = pd.read_csv('https://storage.googleapis.com/download.tensorflow.org/data/creditcard.csv')
     return df
 
 def split_into_3(X, y, spl1, spl2, rn1, rn2):
@@ -234,10 +222,10 @@ def split_into_3(X, y, spl1, spl2, rn1, rn2):
     #rn1=42
     #rn2=4
     # not used: X_test1, y_test1 -> they are temporary, to be split apart in the 2nd train_test_split call 
-    X_train, X_test1, y_train, y_test1 = train_test_split(X,y, test_size = spl1, random_state = None, shuffle=True)
+    X_train, X_test1, y_train, y_test1 = train_test_split(X,y, test_size = spl1, random_state = rn1, shuffle=True)
     # then split Test+Val into Test and Validate
     # Validate will only be used in the 2 Model system (explained below)
-    X_test, X_val, y_test, y_val = train_test_split(X_test1,y_test1, test_size = spl2, random_state = None, shuffle=True)
+    X_test, X_val, y_test, y_val = train_test_split(X_test1,y_test1, test_size = spl2, random_state = rn2, shuffle=True)
     class_names=[0,1] # name  of classes 1=fraudulent transaction
     
     # find the number of minority (value=1) samples in our train set so we can down-sample the majority of our train data to it
@@ -279,66 +267,25 @@ def analyze(df,X,y,min_,max_,compare, no_runs):
         cm_results = []
         cm_matrix = []
         #for i in range(0, 9, 1):
-        for i in np.linspace(min_, max_, num=8):
-            for j in np.linspace(min_, max_, num=8):
+        for i in np.linspace(min_, max_, num=9):
+            for j in np.linspace(min_, max_, num=9):
                 rn1=random.randint(1, 10)
                 rn2=random.randint(1, 10)
                 if (compare == 'split'):
                     spl1 = i/10
                     spl2 = j/10
-                    wt1_1 = 11.0
-                    wt1_0 = 1.0
-                    wt2_1 = 3.0
-                    wt2_0 = 1.0
-                elif (compare == 'weight'): # compare between gb_clf1 and gb_clf2
+                    wt1 = 19.0
+                    wt2 = 19.0           
+                elif (compare == 'weight'):
                     spl1 = 0.3
                     spl2 = 0.3
-                    wt1_1 = (2*i) - 1
-                    wt1_0 = 1.0
-                    wt2_1 = (2*j) - 1  
-                    wt2_0 = 1.0
-                elif (compare == 'weight1'): # compare within gb_clf1
-                    spl1 = 0.3
-                    spl2 = 0.3
-                    wt1_1 = (2*i) - 1
-                    wt1_0 = (2*j) - 1 
-                    wt2_1 = 1.0 
-                    wt2_0 = 1.0
-                elif (compare == 'weight2'): # compare within gb_clf2
-                    spl1 = 0.3
-                    spl2 = 0.3
-                    wt1_0 = 1.0
-                    wt1_1 = 1.0
-                    wt2_0 = (2*j) - 1  
-                    wt2_1 = (2*i) - 1
-                elif (compare == 'wt_ratio'): # compare within gb_clf2
-                    spl1 = 0.3
-                    spl2 = 0.3
-                    wt1_1 = i
-                    wt1_0 = max_ - wt1_1 + 1
-                    wt2_1 = j 
-                    wt2_0 = max_ - wt2_1 + 1 
-                    if (debug == 1):
-                        print('weights:', i, j, wt1_1, wt1_0, wt2_1, wt2_0, wt1_1/wt1_0, wt2_1/wt2_0)
-                elif (compare == 'none'):
-                    spl1 =  0.30
-                    spl2 =  0.30
-                    wt1_1 = 4.0
-                    wt1_0 = 1.0
-                    wt2_1 = 2.3
-                    wt2_0 = 2.7
-                else:
-                    print("default compare is none")
-                    spl1  =  0.3
-                    spl2  =  0.3
-                    wt1_1 = 11.0
-                    wt1_0 =  1.0
-                    wt2_1 =  3.0
-                    wt2_0 =  1.0
-                algo = 'ratio'           
+                    wt1 = (2*i) - 1
+                    wt2 = (2*j) - 1  
+                algo = 'ratio'
+                #print('input', algo, rn1, rn2, spl1, spl2, wt1, wt2)            
                 X_train, y_train, X_test, y_test, X_val, y_val = split_into_3(X, y, spl1, spl2, rn1, rn2)
-                gb_clf1, gb_clf2 = create_models(X_train, y_train, X_test, y_test, X_val, y_val, algo, rn1, rn2, spl1, spl2, wt1_1, wt1_0, wt2_1, wt2_0) 
-                tn1, fp1, fn1, tp1, tn2, fp2, fn2, tp2 = run_model(gb_clf1, gb_clf2, X_train, y_train, X_test, y_test, X_val, y_val, algo, rn1, rn2, spl1, spl2, wt1_1, wt1_0, wt2_1, wt2_0 )
+
+                tn1, fp1, fn1, tp1, tn2, fp2, fn2, tp2 = run_model(X_train, y_train, X_test, y_test, X_val, y_val, algo, rn1, rn2, spl1, spl2, wt1, wt2 )
 
                 total = tn1+tn2+fp2+fn1+fn2+tp2
                 sp = round((tn1 + tn2)/(tn1 + tn2 +fp2), 3)
@@ -347,43 +294,25 @@ def analyze(df,X,y,min_,max_,compare, no_runs):
                 cm_results.append([algo, 'step1','','','','', tn1, fp1, fn1, tp1, sp, se])
                 cm_results.append([algo, 'step2','','','','', tn2, fp2, fn2, tp2, sp, se])
                 cm_results.append([algo, 'final**', rn1, rn2, spl1, spl2, (tn1+tn2), fp2, (fn1+fn2), tp2, round((tn1+tn2)/total,3), round(fp2/total,3), round((fn1+fn2)/total,4), round(tp2/total,3), sp, se])
-                row_result = [wt1_1, wt1_0, wt2_1, wt2_0, rn1, rn2, spl1, spl2, (tn1+tn2), fp2, (fn1+fn2), tp2, round((tn1+tn2)/total,3), round(fp2/total,3), round((fn1+fn2)/total,4), round(tp2/total,3), sp, se]
+                row_result = [wt1, wt2, rn1,rn2,spl1,spl2, (tn1+tn2), fp2, (fn1+fn2), tp2, round((tn1+tn2)/total,3), round(fp2/total,3), round((fn1+fn2)/total,4), round(tp2/total,3), sp, se]
                 cm_matrix.append(row_result)
         cm_matrix_array.append(cm_matrix)
-        
-    # print settings
-    print('test, val, split settings')
-    print(spl1, spl2)
-    print('test, val, split sizes')
-    print( (spl1-spl1*spl2), (spl1*spl2) )
-    print('weight 1_1, weight 1_0, weight 2_1, weight 2_0')
-    print(wt1_1, wt1_0, wt2_1, wt2_0)
-    
     return cm_matrix_array
 
 def plot_data(cm_matrix_array, x_label, y_label, z_label, z1_label, z2_label):
-    if (debug == 1):
-        print('plot_data')
-        print(cm_matrix_array, x_label, y_label, z_label, z1_label, z2_label)
     # draw combined contour map
     cnt = np.array(cm_matrix_array).shape[0]
     rows = np.array(cm_matrix_array).shape[1]
     cols = np.array(cm_matrix_array).shape[2]
-    if (debug == 1):
-        print('cm_matrix_array')
-        print(cnt, rows, cols)
-    cm_matrix_sum = np.zeros((rows,cols))
+    cm_matrix_sum = np.zeros((rows,cols)) 
     for n in range(0,cnt):
         cm_matrix_sum = cm_matrix_sum + np.array(cm_matrix_array[n])
     if (debug == 1):
         print(cm_matrix_sum/cnt)
 
-    df_sum = pd.DataFrame( (cm_matrix_sum/cnt) ,columns=('wt1_1', 'wt1_0', 'wt2_1','wt2_0','rn1','rn2','spl1','spl2','TN','FP','FN','TP','TN_Pct','FP_Pct','FN_Pct','TP_Pct', 'SP', 'SE'))
-    # add an average (SE + SP) metric
+    df_sum = pd.DataFrame( (cm_matrix_sum/cnt) ,columns=('wt1', 'wt2','rn1','rn2','spl1','spl2','TN','FP','FN','TP','TN_Pct','FP_Pct','FN_Pct','TP_Pct', 'SP', 'SE'))
+    #print(df_sum)
     df_sum['Average'] = (df_sum['SP'] + df_sum['SE'])/2
-    df_sum['wt_ratio_1'] = (df_sum['wt1_1']/df_sum['wt1_0'])
-    df_sum['wt_ratio_2'] = (df_sum['wt2_1']/df_sum['wt2_0'])
-    # save output to a file for later detailed comparisons
     df_sum.to_csv ('export_dataframe.csv', index = False, header=True)
 
     # prepare df for contour map to find sweet spot
@@ -392,19 +321,23 @@ def plot_data(cm_matrix_array, x_label, y_label, z_label, z1_label, z2_label):
     # draw contour map
     print("combined contour maps")
 
-    #x=df_sum_in[x_label]
-    #y=df_sum_in[y_label]
-    if (x_label != ''):
-        draw_contour(df_sum_in, x_label, y_label, z1_label)
-        draw_contour(df_sum_in, x_label, y_label, z2_label)
-        draw_contour(df_sum_in, x_label, y_label, z_label)
-    else:
-        print('not drawing contours as the x and y data are constant')
-    df_final = df_sum.drop(columns=['rn1','rn2','spl1','spl2','TN','FP','FN','TP','TN_Pct','TP_Pct','FN_Pct','FP_Pct','wt_ratio_1','wt_ratio_2'])
-    return df_final
+    x=df_sum_in[x_label]
+    y=df_sum_in[y_label]
+
+    draw_contour(df_sum_in, x_label, y_label, z1_label)
+    z=df_sum_in[z1_label]
+    plt.scatter(x,y,c=z)
+
+    draw_contour(df_sum_in, x_label, y_label, z2_label)
+    z=df_sum_in[z2_label]
+    plt.scatter(x,y,c=z)
+
+    draw_contour(df_sum_in, x_label, y_label, z_label)
+    z=df_sum_in[z_label]
+    plt.scatter(x,y,c=z)
 
 def main():
-    # read the full dataset from input file
+    
     df = get_dataset()
     # divide full dataset into features and labels
     X = df.loc[:, df.columns != 'Class']
@@ -413,31 +346,18 @@ def main():
         print('full dataset:',y)
         print('full dataset\n', df['Class'].value_counts())
     
-    # setup parameters for optimization
     cm_matrix_array = []
     min_ = 1
-    max_ = 4
-    no_runs = 20
-    compare = 'none'
+    max_ = 9
+    no_runs = 10
+    compare = 'weight'
     if (compare == 'split'):       
         x_label = 'spl1'
         y_label = 'spl2'
-    elif (compare == 'weight'): # compare between gb_clf1 and gb_clf2
-        x_label = 'wt1_1'
-        y_label = 'wt2_1'
-    elif (compare == 'weight1'): # compare within gb_clf1
-        x_label = 'wt1_1'
-        y_label = 'wt1_0'
-    elif (compare == 'weight2'): # compare within gb_clf2
-        x_label = 'wt2_1'
-        y_label = 'wt2_0'
-    elif (compare == 'wt_ratio'): # compare within gb_clf2
-        x_label = 'wt_ratio_1'
-        y_label = 'wt_ratio_2'
-    elif (compare == 'none'):
-        x_label = ''
-        y_label = ''
-        print('not changing any parameters')
+    elif (compare == 'weight'):
+        x_label = 'wt1'
+        y_label = 'wt2'
+        
     z1_label = 'SP'
     z2_label = 'SE'
     z_label = 'Average'
@@ -456,13 +376,9 @@ def main():
     #    min_samples_per_leaf:   1-10
     #    max_depth:              1-5
     
-    # run the analysis
     cm_matrix_array = analyze(df, X, y, min_, max_, compare, no_runs)
-        
-    # plot the model output
-    df_out = plot_data(cm_matrix_array, x_label, y_label, z_label, z1_label, z2_label)
-    print('df_out')
-    print(df_out)
+    
+    plot_data(cm_matrix_array, x_label, y_label, z_label, z1_label, z2_label)
     
 if __name__ == "__main__":
     main()

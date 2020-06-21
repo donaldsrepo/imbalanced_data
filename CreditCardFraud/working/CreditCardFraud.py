@@ -133,7 +133,8 @@ print("Current Working Directory " , os.getcwd())
 
 
 # Load the Data Set
-df = pd.read_csv('creditcard.csv')
+df = pd.read_csv('https://storage.googleapis.com/download.tensorflow.org/data/creditcard.csv')
+#df = pd.read_csv('creditcard.csv')
 
 
 # Public Credit Card Dataset. This is financial data, and is considered to be sensitive so it is "encrypted" through the use of PCA to protect privacy. Only the Time and Dollar columns are intact after the "encryption"
