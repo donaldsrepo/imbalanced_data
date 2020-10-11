@@ -3,8 +3,10 @@
 
 # <h1 align='center' style='color:purple'>Credit Card Fraud - Imbalanced Data Set</h1>
 
-# Winning kaggle notebook: https://www.kaggle.com/c/ieee-fraud-detection/discussion/111284
-# https://www.kaggle.com/cdeotte/xgb-fraud-with-magic-0-9600
+# Winning kaggle notebook: https://www.kaggle.com/c/ieee-fraud-detection/discussion/111284  
+# https://www.kaggle.com/cdeotte/xgb-fraud-with-magic-0-9600  
+# 
+# Try some of these ideas: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data  
 # 
 # **Use Case:** Credit Card Fraud Detection
 # 
@@ -66,12 +68,21 @@
 
 
 # Import Libraries
-# try some of these ideas: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
-import datetime
-import numpy as np
-import pandas as pd
 
-import os                                                                                                            
+import datetime
+
+import random as rn
+rn.seed(1) # random
+import numpy as np
+#from numpy.random import seed
+np.random.seed(7) # or 7
+import tensorflow as tf
+tf.random.set_seed(0) # tf
+
+import pandas as pd
+import os
+import tempfile
+
 import matplotlib as mpl                                                                                             
 if os.environ.get('DISPLAY','') == '':                                                                               
     print('no display found. Using non-interactive Agg backend')                                                     
@@ -79,7 +90,7 @@ if os.environ.get('DISPLAY','') == '':
     
 import matplotlib.pyplot as plt
 if (os.environ.get('TERM','') == 'xterm-color'): 
-    get_ipython().magic('matplotlib inline')
+    get_ipython().run_line_magic('matplotlib', 'inline')
 elif (os.environ.get('TERM','') == 'cygwin'):
     print("shell terminal found")
 else: # 'cygwin'
@@ -114,22 +125,12 @@ from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler, MinMaxScaler, RobustScaler, PowerTransformer, Normalizer
 from matplotlib import pyplot
 import zipfile
-
-import tensorflow as tf
+import time
 
 StartTime = datetime.datetime.now()
 
 
 # In[2]:
-
-
-#print(os.environ)
-print('TERM:', os.environ.get('TERM',''))
-
-
-# Always like to include a timer function to see where my code is running slow or taking most of the run time
-
-# In[3]:
 
 
 class MyTimer():
@@ -148,7 +149,35 @@ class MyTimer():
         print(msg.format(time=runtime))
 
 
+# In[3]:
+
+
+#print(os.environ)
+print('TERM:', os.environ.get('TERM',''))
+
+
+# Always like to include a timer function to see where my code is running slow or taking most of the run time
+
 # In[4]:
+
+
+class MyTimer():
+    # usage:
+    #with MyTimer():                            
+    #    rf.fit(X_train, y_train)
+    
+    def __init__(self):
+        self.start = time.time()
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        end = time.time()
+        runtime = end - self.start
+        msg = 'The function took {time} seconds to complete'
+        print(msg.format(time=runtime))
+
+
+# In[5]:
 
 
 def CalcPct(df,title):
@@ -159,7 +188,7 @@ def CalcPct(df,title):
     return calc_pct
 
 
-# In[5]:
+# In[6]:
 
 
 colab = os.environ.get('COLAB_GPU', '10')
@@ -167,12 +196,12 @@ if (int(colab) == 0):
     from google.colab import drive
     drive.mount('/content/drive')  
 else:
-    print("")
+    print("colab_gpu not found")
 
 
 # Setup to run on Google Colab and Kaggle platforms
 
-# In[6]:
+# In[7]:
 
 
 # Check if Google Colab path exists
@@ -188,7 +217,7 @@ else:
 print("Current Working Directory " , os.getcwd())
 
 
-# In[7]:
+# In[8]:
 
 
 verbose=0
@@ -202,35 +231,35 @@ df = pd.read_csv('https://storage.googleapis.com/download.tensorflow.org/data/cr
 # 
 # Doing some initial data exploration
 
-# In[8]:
+# In[9]:
 
 
 # Check the data, make sure it loaded okay
 print(df.head())
 
 
-# In[9]:
+# In[10]:
 
 
 # Check the datatypes of the Data set 
 df.info()
 
 
-# In[10]:
+# In[11]:
 
 
 # Check the Uniqueness
 df.nunique()
 
 
-# In[11]:
+# In[12]:
 
 
 # Check for missing data
 df.isnull().sum()
 
 
-# In[12]:
+# In[13]:
 
 
 # Check basic Statistics
@@ -239,7 +268,7 @@ df.isnull().sum()
 df.describe(include ='all')
 
 
-# In[13]:
+# In[14]:
 
 
 # Check the Class Imbalance of the Data 
@@ -247,7 +276,7 @@ df.describe(include ='all')
 df['Class'].value_counts()
 
 
-# In[14]:
+# In[15]:
 
 
 # Histograms of the features
@@ -266,7 +295,7 @@ plt.show()
 # 
 # ![image.png](attachment:2deb1518-2274-4853-9694-97f893bfa5b0.png)
 
-# In[15]:
+# In[16]:
 
 
 f = plt.figure(figsize=(19, 15))
@@ -280,7 +309,7 @@ plt.title("Kendall'sCorrelation Matrix Full Data Set", fontsize=16)
 
 # V21 and V22 show the highest tau-b score, will investigate this relationship later
 
-# In[16]:
+# In[17]:
 
 
 #try some data cleansing, Amount has a few high values, so try using the log of that column instead.
@@ -291,7 +320,7 @@ temp_df['Log_Amount'] = np.log(temp_df.pop('Amount')+0.001)
 df = temp_df.copy()
 
 
-# In[17]:
+# In[18]:
 
 
 from scipy.special import boxcox1p
@@ -322,7 +351,7 @@ for i in lam:
     print("Post", abs(skewness.Skew).mean())
 
 
-# In[18]:
+# In[19]:
 
 
 from scipy.special import boxcox1p
@@ -347,14 +376,14 @@ print("Post: There are {} skewed numerical features to Box Cox transform".format
 print("Post", abs(skewness.Skew).mean())
 
 
-# In[19]:
+# In[20]:
 
 
 X.hist(bins=20, figsize=(20,15))
 plt.show()
 
 
-# In[20]:
+# In[21]:
 
 
 numeric_feats = X.dtypes[X.dtypes != "object"].index
@@ -368,7 +397,7 @@ skewness.head(10)
 
 # Need to normalize the data before using boxcox or log transforms as they don't work on negative and 0 values
 
-# In[21]:
+# In[22]:
 
 
 X = df.loc[:, df.columns != 'Class']
@@ -379,39 +408,39 @@ X = pd.DataFrame(norm.transform(X), index=X.index, columns=X.columns)
 
 # Pre-transform skew
 
-# In[22]:
+# In[23]:
 
 
 numeric_feats = X.dtypes[X.dtypes != "object"].index
 
 # Check the skew of all numerical features
 skewed_feats = X[numeric_feats].apply(lambda x: skew(x.dropna())).sort_values(ascending=False)
-print("\nSkew in numerical features: \n")
+print("\nSkew in all numerical features: \n")
 skewness = pd.DataFrame({'Skew' :skewed_feats})
 skewness.head(10)
-
-
-# In[23]:
-
-
-skewness = skewness[abs(skewness) > 0.75]
-skewness = skewness[skewness.Skew == skewness.Skew]
-print("There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
 
 
 # In[24]:
 
 
-skewness
+skewness = skewness[abs(skewness) > 0.75]
+skewness = skewness[skewness.Skew == skewness.Skew]
+print("There are {} highly skewed numerical features to Box Cox transform".format(skewness.shape[0]))
 
 
 # In[25]:
 
 
-abs(skewness.Skew).mean()
+skewness
 
 
 # In[26]:
+
+
+abs(skewness.Skew).mean()
+
+
+# In[27]:
 
 
 from scipy.special import boxcox1p
@@ -424,7 +453,7 @@ for feat in skewed_features:
 
 # Post-transform skew
 
-# In[27]:
+# In[28]:
 
 
 numeric_feats = X.dtypes[X.dtypes != "object"].index
@@ -436,7 +465,7 @@ skewness = pd.DataFrame({'Skew' :skewed_feats})
 skewness.head(10)
 
 
-# In[28]:
+# In[29]:
 
 
 skewness = skewness[abs(skewness) > 0.75]
@@ -444,19 +473,19 @@ skewness = skewness[skewness.Skew == skewness.Skew]
 print("There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
 
 
-# In[29]:
+# In[30]:
 
 
 skewness
 
 
-# In[30]:
+# In[31]:
 
 
 abs(skewness.Skew).mean()
 
 
-# In[31]:
+# In[32]:
 
 
 X.hist(bins=20, figsize=(20,15))
@@ -466,30 +495,17 @@ plt.show()
 # so far the MinMaxScaler, boxcox1p and log1p transforms make the data more skewed...
 # just utilize the PowerTransformer instead, with yeo-johnson as there are many negative values
 
-# In[32]:
-
-
-X = df.loc[:, df.columns != 'Class']
-y = df.loc[:, df.columns == 'Class']
-
-a='''
-# this is incorrect approach, will lead to information leakage between train and test/val
-pt_tran = 1
-if (pt_tran == 1):
-    pt = PowerTransformer(method='yeo-johnson', standardize=False).fit(X)
-    X = pd.DataFrame(pt.transform(X), index=X.index, columns=X.columns)
-    #norm = MinMaxScaler().fit(X)
-    #X = pd.DataFrame(norm.transform(X), index=X.index, columns=X.columns)'''
-
-
 # Divide the dataset into features and labels and then into Train, Test and Validate datasets
 
 # In[33]:
 
 
+X = df.loc[:, df.columns != 'Class']
+y = df.loc[:, df.columns == 'Class']
+
 # divide full data into features and label
-spl1 = 0.3
-spl2 = 0.3
+spl1 = 0.36
+spl2 = 0.44
 
 OrigPct = CalcPct(y,"Original")
 
@@ -505,23 +521,36 @@ X_train, X_test1, y_train, y_test1 = train_test_split(X,y, test_size = spl1, ran
 # then split Test+Val into Test and Validate
 # Validate will only be used in the 2 Model system (explained below)
 X_test, X_val, y_test, y_val = train_test_split(X_test1,y_test1, test_size = spl2, random_state = None, shuffle=True)
+y_train_orig = y_train.copy(deep=True)
+
+
+# In[34]:
+
+
+type(y_test)
 
 
 # The correct way to transform, fit the train data and transform train, test and val data based on the fit  
 # This does not have any effect on the performance of the model. Mean Specificity and Sensitivity are unchanged. Tested ~ 20 iterations
 
-# In[34]:
+# In[35]:
 
 
-pt_tran = 1
+pt_tran = 0
 if (pt_tran == 1):
-    pt = PowerTransformer(method='yeo-johnson', standardize=False).fit(X_train)
+    pt = PowerTransformer(method='yeo-johnson', standardize=True).fit(X_train)
     X_train = pd.DataFrame(pt.transform(X_train), index=X_train.index, columns=X_train.columns)
     X_test  = pd.DataFrame(pt.transform(X_test), index=X_test.index, columns=X_test.columns)
     X_val   = pd.DataFrame(pt.transform(X_val), index=X_val.index, columns=X_val.columns)
 
 
-# In[35]:
+# In[36]:
+
+
+X_train
+
+
+# In[37]:
 
 
 f = plt.figure(figsize=(16, 12))
@@ -534,7 +563,7 @@ plt.title("Kendall's Correlation Matrix Initial Train Set", fontsize=16)
 plt.show()
 
 
-# In[36]:
+# In[38]:
 
 
 # prepare data for model, need to do this normalization and clipping separately for X_train, X_test and X_val 
@@ -542,23 +571,92 @@ plt.show()
 a='''
 sc = StandardScaler()
 
-X_train = pd.DataFrame(sc.fit_transform(X_train),columns = X_train.columns)
-X_test = pd.DataFrame(sc.fit_transform(X_test),columns = X_test.columns)
-X_val = pd.DataFrame(sc.fit_transform(X_val),columns = X_val.columns)'''
+X_train2 = pd.DataFrame(sc.fit_transform(X_train),columns = X_train.columns)
+X_test2 = pd.DataFrame(sc.transform(X_test),columns = X_test.columns)
+X_val2 = pd.DataFrame(sc.transform(X_val),columns = X_val.columns)
 
-a='''
-X_train = sc.fit_transform(X_train)
-X_test = sc.transform(X_test)
-X_val = sc.transform(X_val)'''
 
-a='''
+#X_train = sc.fit_transform(X_train)
+#X_test = sc.transform(X_test)
+#X_val = sc.transform(X_val)
+
 # handle any extreme fliers, set to 5 or -5
-X_train = np.clip(X_train, -5, 5)
-X_test = np.clip(X_test, -5, 5)
-X_val = np.clip(X_val, -5, 5)'''
+X_train2 = np.clip(X_train2, -5, 5)
+X_test2 = np.clip(X_test2, -5, 5)
+X_val2 = np.clip(X_val2, -5, 5)
+'''
+
+# Use a utility from sklearn to split and shuffle our dataset.
+train_df, test_df = train_test_split(df, test_size=0.2)
+train_df, val_df = train_test_split(train_df, test_size=0.2)
+
+save_data = 1
+if (save_data == 1):
+    df1 = train_df.copy()
+    df1.to_csv('CCFraudTrain.csv', index=False)  
+    df2 = test_df.copy()
+    df2.to_csv('CCFraudTest.csv', index=False) 
+    df3 = val_df.copy()
+    df3.to_csv('CCFraudVal.csv', index=False) 
 
 
-# In[37]:
+# In[39]:
+
+
+train_df
+
+
+# In[40]:
+
+
+if (save_data == 1):
+    #train_df = pd.read_csv('CCFraudTrain.csv')                                                                         
+    #test_df = pd.read_csv('CCFraudTest.csv')  
+    #val_df = pd.read_csv('CCFraudVal.csv')  
+    train_df = pd.read_csv('C:\DataScience\Repo\Imbalanced_data\CreditCardFraud\working\Imb_Train.csv')                                                                         
+    test_df = pd.read_csv('C:\DataScience\Repo\Imbalanced_data\CreditCardFraud\working\Imb_Test.csv')  
+    val_df = pd.read_csv('C:\DataScience\Repo\Imbalanced_data\CreditCardFraud\working\Imb_Val.csv')     
+
+
+# In[41]:
+
+
+train_df
+
+
+# In[42]:
+
+
+# Form np arrays of labels and features.
+train_labels = np.array(train_df.pop('Class'))
+bool_train_labels = train_labels != 0
+val_labels = np.array(val_df.pop('Class'))
+test_labels = np.array(test_df.pop('Class'))
+
+train_features = np.array(train_df)
+val_features = np.array(val_df)
+test_features = np.array(test_df)
+
+scaler = StandardScaler()
+
+train_features = scaler.fit_transform(train_features)
+val_features = scaler.transform(val_features)
+test_features = scaler.transform(test_features)
+
+train_features = np.clip(train_features, -5, 5)
+val_features = np.clip(val_features, -5, 5)
+test_features = np.clip(test_features, -5, 5)
+
+print('Training labels shape:', train_labels.shape)
+print('Validation labels shape:', val_labels.shape)
+print('Test labels shape:', test_labels.shape)
+
+print('Training features shape:', train_features.shape)
+print('Validation features shape:', val_features.shape)
+print('Test features shape:', test_features.shape)
+
+
+# In[43]:
 
 
 class_names=[0,1] # name  of classes 1=fraudulent transaction
@@ -566,25 +664,17 @@ class_names=[0,1] # name  of classes 1=fraudulent transaction
 y_val['Class'].value_counts()
 
 TrainPct = CalcPct(y_train,"Train")
-TestPct = CalcPct(y_test,"Train")
-ValPct = CalcPct(y_val,"Train")
+TestPct = CalcPct(y_test,"Test")
+ValPct = CalcPct(y_val,"Val")
 zeros, ones = np.bincount(y_train['Class'])
 
 
 # Investigate the high tau-b value between V21 and V22
 
-# In[38]:
+# In[44]:
 
 
 # Form np arrays of labels and features for jointplot charts
-
-train_labels = np.array(y_train).flatten()
-bool_train_labels = train_labels != 0 # has an extra ,1 in the bool_train_labels.shape
-val_labels = np.array(y_val)
-test_labels = np.array(y_test)
-train_features = np.array(X_train)
-val_features = np.array(X_val)
-test_features = np.array(X_test)
 
 pos_df = pd.DataFrame(train_features[ bool_train_labels], columns = X.columns)
 neg_df = pd.DataFrame(train_features[~bool_train_labels], columns = X.columns)
@@ -600,7 +690,7 @@ _ = plt.suptitle("Negative distribution")
 
 # For a imbalanced sampling strategy, I will be using undersampling in my project as i think this is the best approach for this type of data
 
-# In[39]:
+# In[45]:
 
 
 # find the number of minority (value=1) samples in our train set so we can down-sample our majority to it
@@ -626,7 +716,7 @@ y_train = np.array(y_train).flatten()
 
 # Create some calculation and visualization functions to show the results
 
-# In[40]:
+# In[46]:
 
 
 def visualize(Actual, Pred, Algo):
@@ -650,7 +740,7 @@ def visualize(Actual, Pred, Algo):
     plt.show()
 
 
-# In[41]:
+# In[47]:
 
 
 def display_metrics(model_name, train_features, test_features, train_label, test_label, pred, algo):
@@ -678,7 +768,10 @@ def display_metrics(model_name, train_features, test_features, train_label, test
     print(classification_report(test_label, pred))
     print("Specificity =", tn/(tn+fp))
     print("Sensitivity =", tp/(tp+fn))
-    y=np.reshape(test_label.to_numpy(), -1)
+    if (type(test_label) != np.ndarray):
+        y = np.reshape(test_label.to_numpy(), -1)
+    else:
+        y = test_label
     fpr, tpr, thresholds = metrics.roc_curve(y, model_probs, pos_label=1)
     cm_results.append([algo, tn, fp, fn, tp])
     cr_results.append([algo, classification_report(test_label, pred)])
@@ -688,7 +781,7 @@ def display_metrics(model_name, train_features, test_features, train_label, test
     return tn, fp, fn, tp
 
 
-# In[42]:
+# In[48]:
 
 
 def auc_roc_metrics(model, test_features, test_labels, algo): # model object, features, actual labels, name of algorithm
@@ -703,7 +796,7 @@ def auc_roc_metrics(model, test_features, test_labels, algo): # model object, fe
     return model_auc
 
 
-# In[43]:
+# In[49]:
 
 
 def auc_roc_metrics_plots(model_probs, ns_probs, test_labels, algo):
@@ -733,7 +826,7 @@ def auc_roc_metrics_plots(model_probs, ns_probs, test_labels, algo):
     return model_auc
 
 
-# In[44]:
+# In[50]:
 
 
 # Define our custom loss function
@@ -745,7 +838,7 @@ def focal_loss(y_true, y_pred):
     return -K.sum(alpha * K.pow(1. - pt_1, gamma) * K.log(pt_1))-K.sum((1-alpha) * K.pow( pt_0, gamma) * K.log(1. - pt_0))
 
 
-# In[45]:
+# In[51]:
 
 
 def prediction_cutoff(model, test_features, cutoff):
@@ -759,7 +852,7 @@ def prediction_cutoff(model, test_features, cutoff):
     return predicted
 
 
-# In[46]:
+# In[52]:
 
 
 metrics_results = {}
@@ -768,7 +861,7 @@ cm_results = []
 cr_results = []
 
 
-# In[47]:
+# In[53]:
 
 
 X_train
@@ -776,7 +869,7 @@ X_train
 
 # run Logistic Regression model first
 
-# In[48]:
+# In[54]:
 
 
 lr = LogisticRegression()
@@ -790,7 +883,7 @@ lr_Pred = prediction_cutoff(lr, X_test, 0.5) # 0.5 is the default cutoff for a l
 
 # Show the results of this model
 
-# In[49]:
+# In[55]:
 
 
 print(metrics.accuracy_score(y_test, lr_Pred))
@@ -800,7 +893,7 @@ lr_auc = auc_roc_metrics(lr, X_test, y_test, 'LR')
 metrics_results['lr'] = lr_auc
 
 
-# In[50]:
+# In[56]:
 
 
 # useful for unbalanced data, maybe include later in metrics summary for all models
@@ -824,7 +917,7 @@ pyplot.show()
 
 # Next try the Random Forest model
 
-# In[51]:
+# In[57]:
 
 
 rf = RandomForestClassifier(n_estimators = 1000)
@@ -841,7 +934,7 @@ metrics_results['rf'] = rf_auc
 
 # Show the results of this model
 
-# In[52]:
+# In[58]:
 
 
 rf2 = RandomForestClassifier(bootstrap=True, ccp_alpha=0.0, class_weight=None,
@@ -865,7 +958,7 @@ metrics_results['rf2'] = rf2_auc
 
 # Try an unsupervised method using anamoly detection
 
-# In[53]:
+# In[59]:
 
 
 rng = np.random.RandomState(42)
@@ -875,7 +968,7 @@ iso_Pred = iso.predict(X_test)
 iso_Pred[iso_Pred == -1] = 0
 
 
-# In[54]:
+# In[60]:
 
 
 #print(metrics.accuracy_score(y_test, y_pred))
@@ -888,9 +981,9 @@ visualize(y_test, iso_Pred, 'ISO')
 
 # There is some variability in the results from run to run, due to random sampling and imbalanced data. This time, LogisticRegression has better prediction capability, the RandomForestClassifier test has a lot more mistakes in the False Positive category, and even a few more mistakes in the False Negative category.
 
-# Now lets try a GradientBoosting Algorithm
+# Now lets try a normal GradientBoosting Algorithm
 
-# In[55]:
+# In[61]:
 
 
 #setup model parameters, change some of the defaults based on benchmarking
@@ -912,7 +1005,7 @@ predictions = gb_clf.predict(X_test)
 
 # Display the results
 
-# In[56]:
+# In[62]:
 
 
 tn, fp, fn, tp = display_metrics(gb_clf, X_train, X_test, y_train, y_test, predictions, 'GB')
@@ -927,7 +1020,7 @@ metrics_results['gb'] = gb_auc
 # 
 # Here are some details on the new model:
 # 
-# Current:
+# Current:  
 # Full Dataset -> Train -> Build M1(Train) -> Run M1(Test) -> Filter(Predicted 1's from Test) -> Build M2 -> run M2(Filtered Test)
 #                 Test
 #                 
@@ -940,28 +1033,91 @@ metrics_results['gb'] = gb_auc
 
 # 1st step
 # 
-# build the 1st model to be used later on the validate dataset
+# build the 1st model to be used later on the validate dataset - optimize on high NPV (Negative Predictive Value) metric
 
-# In[57]:
+# Optimize model using GridSearchCV
+
+# In[63]:
 
 
-#setup model parameters, change some of the defaults based on benchmarking
-gb_clf1 = GradientBoostingClassifier(n_estimators=20, learning_rate=0.1, max_features=5, 
-                                    max_depth=3, random_state=None, subsample = 1.0, criterion='mse', 
-                                    min_samples_split = 10, min_samples_leaf = 10)
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import make_scorer
 
-#default fit model
-#gb_clf1.fit(X_train, y_train)
+
+# In[64]:
+
+
+#creating Scoring parameter:
+
+# need this because npv is not available for scoring, but precision is just npv with 0 and 1 swapped
+inv_y_train = 1 - y_train
+
+scoring = {
+    'precision': make_scorer(precision_score),
+    'accuracy': make_scorer(accuracy_score),
+    'sensitivity': make_scorer(recall_score),
+    'specificity': make_scorer(recall_score,pos_label=0)
+    
+}
+
+# A sample parameter
+
+parameters = {
+    "loss":["deviance"],
+    "learning_rate": [0.5],#, 0.01],
+    "min_samples_split": [0.1],
+    "min_samples_leaf": [0.05],
+    "max_depth":[4],
+    "max_features":["log2"],
+    "criterion": ["mse"],
+    "subsample":[0.5],#, 0.618, 0.8, 0.85, 0.9, 0.95, 1.0],
+    "n_estimators":[20],
+    "tol": [0.001],
+    "ccp_alpha": [0.001],
+    "random_state": [0]
+    }
+#passing the scoring function in the GridSearchCV
+clf = GridSearchCV(GradientBoostingClassifier(), parameters,scoring=scoring,refit=False,cv=10, n_jobs=-1)
+
+#clf.fit(X_train, y_train)
+clf.fit(X_train, inv_y_train, sample_weight=np.where(inv_y_train == 0,3.6,1.4) ) # was 5.0
+#converting the clf.cv_results to dataframe
+df=pd.DataFrame.from_dict(clf.cv_results_)
+df.to_csv('gb1.csv',index=False)
+#here Possible inputs for cross validation is cv=2, there two split split0 and split1
+df[['split0_test_precision','split1_test_precision','split0_test_accuracy','split1_test_accuracy','split0_test_sensitivity','split1_test_sensitivity','split0_test_specificity','split1_test_specificity']]
+
+
+# In[65]:
+
+
+df
+
+
+# In[66]:
+
+
+# 1st step: optimize to lowest False Negative (Type 2 error) counts = high npv  tn/(tn+fn)
+# 2nd step: optimize to lowest False Positive (Type 1 error) counts = high specificity  tn/(tn+fp)
+
+#gb_clf1 = GradientBoostingClassifier(n_estimators=20, learning_rate=0.1, max_features=5, 
+#                                    max_depth=3, random_state=None, subsample = 1.0, criterion='mse', 
+#                                    min_samples_split = 10, min_samples_leaf = 10)
+
+gb_clf1 = GradientBoostingClassifier(loss='deviance', n_estimators=20, learning_rate=0.5, max_features="log2", 
+                                    max_depth=4, random_state=0, subsample = 0.5, criterion='mse', 
+                                    min_samples_split = 0.1, min_samples_leaf = 0.05, tol=0.001, ccp_alpha=0.001)
 
 #since a false negative is much more likely than a false positive, we should weight them accordingly. 
 #IE Finding a true one is more important, also more rare
 gb_clf1.fit( X_train, y_train, sample_weight=np.where(y_train == 1,3.6,1.4) ) # was 5.0
-
-#use model to predict validation dataset
 predictions = gb_clf1.predict(X_test) 
 
 
-# In[58]:
+# In[67]:
 
 
 algo = 'GB1 Train **'
@@ -975,7 +1131,7 @@ metrics_results['gb1_train'] = gb1_auc
 
 # Add 1st model prediction column to X_test for filtering
 
-# In[59]:
+# In[68]:
 
 
 X_test['Prediction'] = predictions
@@ -983,7 +1139,7 @@ X_test['Prediction'] = predictions
 
 # select rows with prediction of 1
 
-# In[60]:
+# In[69]:
 
 
 yes_ind = X_test[X_test['Prediction'] == 1].index
@@ -991,14 +1147,14 @@ yes_ind = X_test[X_test['Prediction'] == 1].index
 
 # Create 2nd train dataset from 1st dataset where the prediction was 1
 
-# In[61]:
+# In[70]:
 
 
 X2_test = X_test.loc[yes_ind]
 y2_test = y_test.loc[yes_ind]
 
 
-# In[62]:
+# In[71]:
 
 
 y_test
@@ -1006,13 +1162,13 @@ y_test
 
 # clean up the X_test dataset for future modeling, means remove the Prediction column
 
-# In[63]:
+# In[72]:
 
 
 X_test = X_test.drop(['Prediction'], axis=1)
 
 
-# In[64]:
+# In[73]:
 
 
 X2_test = X2_test.drop(['Prediction'], axis=1)
@@ -1020,7 +1176,7 @@ X2_test = X2_test.drop(['Prediction'], axis=1)
 
 # Look at the prediction values from the first model (preda_1) for the rows with a predicted label of 0
 
-# In[65]:
+# In[74]:
 
 
 proba = gb_clf1.predict_proba(X2_test) 
@@ -1032,24 +1188,68 @@ plt.show()
 
 # Then we look at the ROC curve
 
-# In[66]:
+# In[75]:
 
 
 algo = 'PredictedPositives'
-test_labels = y2_test
-ns_probs = [0 for _ in range(len(test_labels))]
-auc_roc_metrics_plots(proba[:,1], ns_probs, test_labels, algo)
+test_labels_temp = y2_test
+ns_probs = [0 for _ in range(len(test_labels_temp))]
+auc_roc_metrics_plots(proba[:,1], ns_probs, test_labels_temp, algo)
 
 
-# Next we build the 2nd model to be used model later on the validate dataset and look at the output
+# Next we build the 2nd model to be used model later on the validate dataset and look at the output - optimize on Specificity metric  
+# 2nd step: optimize to lowest False Positive (Type 1 error) counts = high specificity  tn/(tn+fp)
 
-# In[67]:
+# In[76]:
+
+
+#creating Scoring parameter:
+
+scoring = {
+    'specificity': make_scorer(recall_score,pos_label=0),
+    'precision': make_scorer(precision_score),
+    'accuracy': make_scorer(accuracy_score),
+    'sensitivity': make_scorer(recall_score)
+}
+
+# A sample parameter
+
+parameters = {
+    "loss":["deviance"],
+    "learning_rate": [0.05],#, 0.01],
+    "min_samples_split": [0.1],
+    "min_samples_leaf": [0.1],
+    "max_depth":[4],#,5,8],
+    "max_features":["log2"],
+    "criterion": ["mse"],
+    "subsample":[0.5],#, 0.618, 0.8, 0.85, 0.9, 0.95, 1.0],
+    "n_estimators":[20],
+    "tol": [0.001],
+    "ccp_alpha": [0.05] 
+}
+
+#passing the scoring function in the GridSearchCV
+clf = GridSearchCV(GradientBoostingClassifier(), parameters,scoring=scoring,refit=False,cv=10, n_jobs=-1)
+
+clf.fit(X_train, y_train)
+#converting the clf.cv_results to dataframe
+df=pd.DataFrame.from_dict(clf.cv_results_)
+df.to_csv('gb1.csv',index=False)
+#here Possible inputs for cross validation is cv=2, there two split split0 and split1
+df[['split0_test_specificity','split1_test_specificity','split0_test_accuracy','split1_test_accuracy','split0_test_precision','split1_test_precision','split0_test_sensitivity','split1_test_sensitivity']]
+
+
+# In[77]:
 
 
 #setup model parameters, change some of the defaults based on benchmarking
-gb_clf2 = GradientBoostingClassifier(n_estimators=20, learning_rate=0.1, max_features=10, 
-                                    max_depth=3, random_state=None, subsample = 1.0, criterion='mse', 
-                                    min_samples_split = 10, min_samples_leaf = 10)
+#gb_clf2 = GradientBoostingClassifier(n_estimators=20, learning_rate=0.1, max_features=10, 
+#                                    max_depth=3, random_state=None, subsample = 1.0, criterion='mse', 
+#                                    min_samples_split = 10, min_samples_leaf = 10)
+
+gb_clf2 = GradientBoostingClassifier(n_estimators=20, learning_rate=0.05, max_features="log2", 
+                                    max_depth=4, random_state=None, subsample = 0.5, criterion='mse', 
+                                    min_samples_split = 0.1, min_samples_leaf = 0.1, tol = 0.001, ccp_alpha = 0.05)
 
 #default fit model
 #gb_clf2.fit(X_train, y_train)
@@ -1090,7 +1290,7 @@ plt.xlabel('Predicted label')
 
 # Now that we have built the 2 models from the test dataset, run the untouched validate dataset through both of them to get an unbiased result to compare against
 
-# In[68]:
+# In[78]:
 
 
 # run the validate dataset through the first model
@@ -1104,7 +1304,7 @@ X1_val_final['Proba_1'] = predictions_proba1[:,1]
 #X_val = X_val.sort_index(axis = 0) 
 
 
-# In[ ]:
+# In[79]:
 
 
 # adding this
@@ -1116,7 +1316,7 @@ gb1_auc = auc_roc_metrics(gb_clf1, X_val, y_val, algo)
 metrics_results['gb1_validate'] = gb1_auc
 
 
-# In[ ]:
+# In[80]:
 
 
 
@@ -1148,7 +1348,7 @@ X_val_final.loc[X_val_final['Proba_2'].isnull(),'Proba_2'] = X_val_final['Proba_
 X_val = X_val.drop(['Prediction'], axis=1)
 
 
-# In[ ]:
+# In[81]:
 
 
 algo = 'GB2 Validate **'
@@ -1188,27 +1388,27 @@ cm_results.append([algo, (tn+tn1), fp, (fn+fn1), tp])
 #two_step_auc = auc_roc_metrics(gb_clf, X_test, y_test, '2-Step')
 
 
-# In[ ]:
+# In[82]:
 
 
 # try to combine the 2 models into one AUC score, however not sure that the proba values from 2 different models can be combined 
 
-test_labels = X_val_final['Class']
-ns_probs = [0 for _ in range(len(test_labels))]
+test_labels_temp = X_val_final['Class']
+ns_probs = [0 for _ in range(len(test_labels_temp))]
 model_probs = X_val_final['Proba_2']
 model_pred=[1 if i > 0.50 else 0 for i in model_probs]
 
-two_step_auc = auc_roc_metrics_plots(model_probs, ns_probs, test_labels, algo)
+two_step_auc = auc_roc_metrics_plots(model_probs, ns_probs, test_labels_temp, algo)
 
 metrics_results['2-step'] = two_step_auc
 
-cr_results.append([algo, classification_report(test_labels, model_pred)])
+cr_results.append([algo, classification_report(test_labels_temp, model_pred)])
 
 
-# In[ ]:
+# In[83]:
 
 
-y=np.reshape(test_labels.to_numpy(), -1)
+y=np.reshape(test_labels_temp.to_numpy(), -1)
 fpr, tpr, thresholds = metrics.roc_curve(y, model_probs, pos_label=1)
 roc.append([algo, fpr, tpr, thresholds])
 
@@ -1217,7 +1417,7 @@ roc.append([algo, fpr, tpr, thresholds])
 
 # Next will try a few Neural Networks
 
-# In[ ]:
+# In[84]:
 
 
 import keras
@@ -1240,7 +1440,7 @@ from keras.layers import Activation
 
 # Adding swish activation function code for possible use later, can compare to relu, etc
 
-# In[ ]:
+# In[85]:
 
 
 # create new activation function
@@ -1248,7 +1448,7 @@ def swish(x, beta = 1):
     return (x * sigmoid(beta * x))
 
 
-# In[ ]:
+# In[86]:
 
 
 # add this function to the list of Activation functions
@@ -1257,7 +1457,7 @@ get_custom_objects().update({'swish': Activation(swish)})
 
 # Create the models to be used layer, using Sequential()
 
-# In[ ]:
+# In[87]:
 
 
 def create_dnn(input_dim):
@@ -1273,23 +1473,24 @@ def create_dnn(input_dim):
     return clf1
 
 
-# In[ ]:
+# In[88]:
 
 
 def create_simple_dnn(input_dim):
     # input_dim must equal number of features in X_train and X_test dataset
     clf1 = Sequential([
         Dense(units=16, kernel_initializer='uniform', input_dim=input_dim, activation='relu'),
+        Dropout(0.25),
         Dense(units=18, kernel_initializer='uniform', activation='relu'),
         Dense(1, kernel_initializer='uniform', activation='sigmoid')
     ])
     return clf1
 
 
-# In[ ]:
+# In[89]:
 
 
-def create_complex_dnn(input_dim):
+def create_dnn_complex(input_dim):
     # input_dim must equal number of features in X_train and X_test dataset
     clf1 = Sequential([
         Dense(units=16, kernel_initializer='uniform', input_dim=input_dim, activation='relu'),
@@ -1308,7 +1509,24 @@ def create_complex_dnn(input_dim):
     return clf1
 
 
-# In[ ]:
+# In[90]:
+
+
+# source: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
+def create_online_dnn(input_dim, output_bias=0):
+    output_bias = keras.initializers.Constant(output_bias)
+    # input_dim must equal number of features in X_train and X_test dataset
+    clf1 = Sequential([
+        Dense(units=16, kernel_initializer='uniform', input_dim=input_dim, activation='relu'),
+        Dropout(0.25),
+        Dense(units=18, kernel_initializer='uniform', activation='relu'),
+        Dense(1, kernel_initializer='uniform', activation='sigmoid', bias_initializer=output_bias)
+        #Dense(1, activation='sigmoid', bias_initializer=output_bias)
+    ])
+    return clf1
+
+
+# In[91]:
 
 
 def create_cnn(input_shape):
@@ -1332,9 +1550,76 @@ def create_cnn(input_shape):
     return model
 
 
+# In[92]:
+
+
+class Metrics(keras.callbacks.Callback):
+    def on_train_begin(self, logs={}):
+        self.confusion = []
+        self.precision = []
+        self.npv = []
+        self.recall = []
+        self.specificity = []
+        self.f1s = []
+        self.kappa = []
+        self.auc = []
+
+    def on_epoch_end(self, epoch, logs={}):
+        score = np.asarray(self.model.predict(self.validation_data[0]))
+        predict = np.round(np.asarray(self.model.predict(self.validation_data[0])))
+        targ = self.validation_data[1]
+
+        self.auc.append(sklm.roc_auc_score(targ, score))
+        self.confusion.append(sklm.confusion_matrix(targ, predict))
+        self.precision.append(sklm.precision_score(targ, predict))
+        self.npv.append(sklm.precision_score(1-targ, 1-predict))
+        self.recall.append(sklm.recall_score(targ, predict))
+        self.specificity.append(sklm.recall_score(1-targ, 1-predict))
+        self.f1s.append(sklm.f1_score(targ, predict))
+        self.kappa.append(sklm.cohen_kappa_score(targ, predict))
+        print('precision: ', sklm.precision_score(targ, predict))
+        print('recall: ', sklm.recall_score(targ, predict))
+        print('npv: ', sklm.precision_score(1-targ, 1-predict))
+        print('specificity: ', sklm.recall_score(1-targ, 1-predict))
+
+        return
+
+
+# In[93]:
+
+
+import keras.backend as K
+def custom_loss_abs_sum(y_true, y_pred):
+    loss = abs(y_true - y_pred)
+    return loss
+#clf.compile(optimizer='adam', loss=custom_loss_abs_sum, metrics=['accuracy']) 
+
+
+# In[94]:
+
+
+# list of all metrics: https://www.tensorflow.org/api_docs/python/tf/keras/metrics
+METRICS = [
+      keras.metrics.TruePositives(name='tp'),
+      keras.metrics.FalsePositives(name='fp'),
+      keras.metrics.TrueNegatives(name='tn'),
+      keras.metrics.FalseNegatives(name='fn'), 
+      keras.metrics.BinaryAccuracy(name='accuracy', threshold=0.5),
+      keras.metrics.Precision(name='precision'),
+      keras.metrics.Recall(name='recall'),
+      keras.metrics.AUC(name='auc'),
+      keras.metrics.BinaryCrossentropy(name='crossentropy', from_logits=False, label_smoothing=0),
+      keras.metrics.SensitivityAtSpecificity(specificity=0.0, num_thresholds=200, name='sensitivity'),  # (tp / (tp + fn)).
+      keras.metrics.SpecificityAtSensitivity(sensitivity=0.0, num_thresholds=200, name='specificity'),   # (tn / (tn + fp)).
+      keras.metrics.CosineSimilarity(name='cosine_similarity', axis=-1),
+      keras.metrics.KLDivergence(name='kl_divergence'),
+      keras.metrics.LogCoshError(name='logcosh'),
+]
+
+
 # run the CNN model
 
-# In[ ]:
+# In[95]:
 
 
 input_shape = (X_train.shape[1], 1)
@@ -1354,13 +1639,19 @@ X_test_arr = X_test.copy().to_numpy()
 y_test_arr = y_test.copy()
 X_test_arr = X_test_arr.reshape(nrows, ncols, 1)
 
+nrows, ncols = X_val.shape # (602,30)
+X_val_arr = X_val.copy().to_numpy()
+y_val_arr = y_val.copy()
+X_val_arr = X_val_arr.reshape(nrows, ncols, 1)
+
 #opt = keras.optimizers.RMSprop(learning_rate=0.0001, decay=1e-6)
 # Let's train the model using RMSprop
 #clf.compile(loss='binary_crossentropy',
 #              optimizer=opt,
 #              metrics=['accuracy'])
 # or
-clf.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+#clf.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy']) 
+clf.compile(optimizer='adam', loss=custom_loss_abs_sum, metrics=['accuracy'])  
 
 clf.summary()
 
@@ -1373,7 +1664,10 @@ clf.summary()
 #clf.fit(X_train, y_train, batch_size=16, epochs=32, sample_weight=np.where(y_train == 1,0.2,1.0).flatten())
 #clf.fit(X_train, y_train, batch_size=16, epochs=20, sample_weight=np.where(y_train == 1,1.0,1.0).flatten())
 # or
-clf.fit(X_train_arr, y_train_arr, epochs=200, verbose=verbose, sample_weight=np.where(y_train_arr == 1,1.0,1.0).flatten())
+
+clf.fit(X_train_arr, y_train_arr, epochs=20, verbose=1, 
+        sample_weight=np.where(y_train_arr == 1,1.0,1.0).flatten(), 
+        shuffle=True, validation_data=(X_val_arr, y_val_arr))
 # check model metrics
 score = clf.evaluate(X_train_arr, y_train_arr, batch_size=128)
 print('\nAnd the Train Score is ', score[1] * 100, '%')
@@ -1395,7 +1689,7 @@ cnn_auc = auc_roc_metrics(clf, X_test_arr, y_test_arr, 'CNN')
 metrics_results['cnn'] = cnn_auc
 
 
-# In[ ]:
+# In[96]:
 
 
 X_train.shape[1]
@@ -1403,12 +1697,82 @@ X_train.shape[1]
 
 # Now run the basic DNN (Deep Neural Network)
 
-# In[ ]:
+# for Custom Loss fit to Train dataset (balanced):  
+# 
+# Use Keras/Tensor math functions!  
+# reference: https://www.tensorflow.org/api_docs/python/tf/keras/backend/  
+# 
+# Predictions on test dataset:  
+# 
+# loss = y_true - y_pred => all predictions are 1, fn are loss=+1, fp are loss=-1  
+# [[    0 59708]  
+# [    0   102]]  
+# 
+# loss = y_pred - y_true => all predictions are 0, fp are loss=+1, fn are loss=-1  
+# [[59708     0]  
+#  [  102     0]]  
+#  
+# loss = abs(y_true - y_pred) => all mistakes have equal weight  
+# 
+# [[57693  2015]  
+#  [   12    90]]  
+
+# In[97]:
 
 
+# https://www.tensorflow.org/api_docs/python/tf/keras/backend/
+
+import keras.backend as K
+def custom_loss_mask(y_true, y_pred):
+    #loss = abs(y_true - y_pred)
+    
+    mask1 = K.less(y_pred, y_true) # is y_pred < y_true or y_pred - y_true < 0, FN
+    mask2 = K.less(y_true, y_pred) # is y_true < y_pred or y_true - y_pred < 0, FP
+    #loss = K.cast(mask1, K.floatx()) * 2 * (y_true - y_pred) # only include FN
+    loss = (K.cast(mask1, K.floatx()) * 2 * (y_true - y_pred)) + (K.cast(mask2, K.floatx()) * 4 * (y_pred - y_true)) # only include FN
+    return loss
+#clf.compile(optimizer='adam', loss=custom_loss_mask, metrics=['accuracy']) 
+
+
+# In[98]:
+
+
+# define variable learning rate function
+from keras.callbacks import LearningRateScheduler, EarlyStopping, History, LambdaCallback
+import math
+
+def step_decay(epoch, lr):
+    drop = 0.995 # was .999
+    epochs_drop = 5.0 # was 175, sgd likes 200+, adam likes 100
+    lrate = lr * math.pow(drop, math.floor((1+epoch)/epochs_drop))
+    print("epoch=" + str(epoch) + " lr=" + str(lr) + " lrate=" + str(lrate))
+    return lrate
+lrate = LearningRateScheduler(step_decay)
+early_stopping = EarlyStopping(monitor='val_loss', patience=25, mode='auto', restore_best_weights = True)
+callbacks_list = [lrate, early_stopping] 
+
+
+# In[99]:
+
+
+from keras.optimizers import Adam, SGD, RMSprop
+
+verbose=1
 clf = create_dnn(input_dim)
 clf.summary()
-clf.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+#clf.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+learning_rate = 0.0001
+decay = 0.0002
+momentum=0.99
+opt_sel = "adam"
+if (opt_sel == "adam"):
+    #opt = Adam(lr=learning_rate, beta_1=beta_1, beta_2=beta_2, epsilon=epsilon, amsgrad=amsgrad) # added to v86
+    opt = Adam(lr=learning_rate)
+elif(opt_sel == "sgd"):
+    opt = SGD(learning_rate=learning_rate, momentum=momentum, decay=decay, nesterov=True)
+
+clf.compile(optimizer=opt, loss=custom_loss_mask, metrics=['accuracy'])
 
 #adam = keras.optimizers.Adam(learning_rate=0.001)
 # try using focal_loss to give heavier weight to examples that are difficult to classify
@@ -1417,7 +1781,9 @@ clf.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
 # create/fit model on the training dataset
 #clf.fit(X_train, y_train, batch_size=16, epochs=32, sample_weight=np.where(y_train == 1,0.2,1.0).flatten())
-clf.fit(X_train, y_train, batch_size=16, epochs=20, verbose=verbose, sample_weight=np.where(y_train == 1,1.0,1.0).flatten())
+clf.fit(X_train, y_train, batch_size=16, epochs=200, verbose=verbose, 
+        sample_weight=np.where(y_train == 1,1.0,1.0).flatten(), 
+        callbacks=callbacks_list, validation_data=(X_val, y_val))
 
 # check model metrics
 score = clf.evaluate(X_train, y_train, batch_size=128)
@@ -1453,7 +1819,7 @@ metrics_results['dnn'] = dnn_auc
 
 # Look at simpler and more complex examples of a DNN for comparison
 
-# In[ ]:
+# In[100]:
 
 
 clf = create_simple_dnn(input_dim)
@@ -1461,7 +1827,8 @@ clf.summary()
 clf.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 # create/fit model on the training dataset
 #clf.fit(X_train, y_train, batch_size=15, epochs=5, sample_weight=np.where(y_train == 1,0.1,1.0).flatten())
-clf.fit(X_train, y_train, batch_size=32, epochs=32, verbose=verbose, sample_weight=np.where(y_train == 1,1.0,1.0).flatten())
+clf.fit(X_train, y_train, batch_size=32, epochs=32, verbose=verbose, sample_weight=np.where(y_train == 1,1.0,1.0).flatten(), 
+        callbacks=callbacks_list, validation_data=(X_val, y_val))
 #clf.fit(X_train, y_train, batch_size=15, epochs=5, sample_weight=np.where(y_train == 1,5.0,1.0).flatten())
 #clf.fit(X_train, y_train, batch_size=15, epochs=5)
 
@@ -1485,17 +1852,82 @@ dnn_simple_auc = auc_roc_metrics(clf, X_test, y_test, 'DNN-Simple')
 metrics_results['dnn_simple'] = dnn_simple_auc
 
 
+# In[101]:
+
+
+def plot_metrics(history):
+    metrics =  ['loss', 'auc', 'precision', 'recall', 'accuracy']
+    for n, metric in enumerate(metrics):
+        name = metric.replace("_"," ").capitalize()
+        plt.subplot(2,3,n+1)
+        plt.plot(history.epoch,  history.history[metric], color=colors[0], label='Train')
+        plt.plot(history.epoch, history.history['val_'+metric],
+                 color=colors[0], linestyle="--", label='Val')
+        plt.xlabel('Epoch')
+        plt.ylabel(name)
+        if metric == 'loss':
+            plt.ylim([0, plt.ylim()[1]])
+        elif metric == 'auc':
+            plt.ylim([0.8,1])
+        else:
+            plt.ylim([0,1])
+
+        plt.legend()
+
+
+# ![image.png](attachment:b642217d-f6e1-4c32-aaaa-345d247f3dce.png)
+
+# In[102]:
+
+
+#early_stopping = EarlyStopping(monitor='val_loss', patience=25, mode='auto', restore_best_weights = True)
+#callbacks_list = [lrate, early_stopping] 
+neg, pos = np.bincount(y_train)
+initial_bias = np.log([pos/neg])
+clf = create_online_dnn(input_dim=input_dim, output_bias = initial_bias)
+clf.summary()
+clf.compile(optimizer='adam', loss='binary_crossentropy', metrics=METRICS)
+# create/fit model on the training dataset
+baseline_history = clf.fit(X_train, y_train, batch_size=32, epochs=100, 
+        verbose=verbose, sample_weight=np.where(y_train == 1,1.0,1.0).flatten(), 
+        callbacks=callbacks_list, validation_data=(X_val, y_val))
+# check model metrics
+score = clf.evaluate(X_train, y_train, batch_size=128)
+print('\nAnd the Train Score is ', score[1] * 100, '%')
+print('\nThe loss is ',score[0])
+score = clf.evaluate(X_test, y_test, batch_size=128)
+print('\nAnd the Test Score is ', score[1] * 100, '%')
+# predict probabilities for test set
+yhat_probs = clf.predict(X_test, verbose=verbose)
+# predict crisp classes for test set
+yhat_classes = clf.predict_classes(X_test, verbose=verbose)
+# reduce to 1d array
+yhat_probs = yhat_probs[:, 0]
+yhat_classes = yhat_classes[:, 0]
+print("Classification Report (DNN Online)") 
+print(classification_report(y_test, yhat_classes))
+tn, fp, fn, tp = display_metrics(clf, X_train, X_test, y_train, y_test, yhat_classes, 'DNN Online')
+visualize(y_test, yhat_classes, 'DNN Online')
+dnn_online_auc = auc_roc_metrics(clf, X_test, y_test, 'DNN-Online')
+metrics_results['dnn_online'] = dnn_online_auc
+mpl.rcParams['figure.figsize'] = (12, 10)
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+#plot_metrics(baseline_history)
+
+
 # This DNN is successful at reducing the FP/TP ratio. This is expected as a Neural Network can decide on its own rules to include based on the input data. Below I try other more and less complex methods, but so far the results are not as good.
 
-# In[ ]:
+# In[103]:
 
 
-clf = create_complex_dnn(input_dim)
+clf = create_dnn_complex(input_dim)
 clf.summary()
 clf.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 # create/fit model on the training dataset
 #clf.fit(X_train, y_train, batch_size=15, epochs=5, sample_weight=np.where(y_train == 1,0.1,1.0).flatten())
-clf.fit(X_train, y_train, batch_size=16, epochs=32, verbose=verbose, sample_weight=np.where(y_train == 1,4.0,1.0).flatten())
+clf.fit(X_train, y_train, batch_size=16, epochs=32, 
+       verbose=verbose, sample_weight=np.where(y_train == 1,4.0,1.0).flatten(),
+       callbacks=[early_stopping],validation_data=(X_val, y_val))
 #clf.fit(X_train, y_train, batch_size=15, epochs=5, sample_weight=np.where(y_train == 1,5.0,1.0).flatten())
 #clf.fit(X_train, y_train, batch_size=15, epochs=5)
 
@@ -1519,7 +1951,194 @@ dnn_complex_auc = auc_roc_metrics(clf, X_test, y_test, 'DNN-Complex')
 metrics_results['dnn_complex'] = dnn_complex_auc
 
 
-# In[ ]:
+# In[104]:
+
+
+a=''''scaler = StandardScaler()
+
+train_features = scaler.fit_transform(train_features)
+val_features = scaler.transform(val_features)
+test_features = scaler.transform(test_features)
+
+train_features = np.clip(train_features, -5, 5)
+val_features = np.clip(val_features, -5, 5)
+test_features = np.clip(test_features, -5, 5)
+
+print('Training labels shape:', train_labels.shape)
+print('Validation labels shape:', val_labels.shape)
+print('Test labels shape:', test_labels.shape)
+
+print('Training features shape:', train_features.shape)
+print('Validation features shape:', val_features.shape)
+print('Test features shape:', test_features.shape)'''
+
+
+# In[105]:
+
+
+print('Training labels shape:', train_labels.shape)
+print('Validation labels shape:', val_labels.shape)
+print('Test labels shape:', test_labels.shape)
+
+print('Training features shape:', train_features.shape)
+print('Validation features shape:', val_features.shape)
+print('Test features shape:', test_features.shape)
+
+
+# In[106]:
+
+
+#import keras.backend as K                                                                                         
+def custom_loss(y_true, y_pred):                                                                                   
+    #loss = abs(y_true - y_pred)                                                                                   
+    mask1 = K.less(y_pred, y_true) # is y_pred < y_true or y_pred - y_true < 0, FN                                 
+    mask2 = K.less(y_true, y_pred) # is y_true < y_pred or y_true - y_pred < 0, FP                                 
+    #loss = K.cast(mask1, K.floatx()) * 2 * (y_true - y_pred) # only include FN                                    
+    loss = (K.cast(mask1, K.floatx()) * 2 * (y_true - y_pred)) + (K.cast(mask2, K.floatx()) * 4 * (y_pred - y_true) ) # FP has higher penalty                                                                                          
+    return loss 
+
+def binary_accuracy(y_true, y_pred):
+    return K.mean(K.equal(y_true, K.round(y_pred)), axis=-1)
+
+def custom_loss_function(y_true, y_pred):
+    squared_difference = K.square(y_true - y_pred)
+    return tf.reduce_mean(squared_difference, axis=-1)
+
+def make_model(metrics = METRICS, output_bias=-100):
+    #if output_bias is not None:
+    print('func_output_bias:', output_bias)
+    
+    METRICS = [
+          keras.metrics.TruePositives(name='tp'),
+          keras.metrics.FalsePositives(name='fp'),
+          keras.metrics.TrueNegatives(name='tn'),
+          keras.metrics.FalseNegatives(name='fn'), 
+          keras.metrics.BinaryAccuracy(name='accuracy', threshold=0.5),
+          keras.metrics.Precision(name='precision'),
+          keras.metrics.Recall(name='recall'),
+          keras.metrics.AUC(name='auc'),
+          #keras.metrics.BinaryCrossentropy(name='crossentropy', from_logits=False, label_smoothing=0),
+          keras.metrics.BinaryCrossentropy(name='crossentropy'),
+          keras.metrics.SensitivityAtSpecificity(specificity=0.0, num_thresholds=200, name='sensitivity'),  # (tp / (tp + fn)).
+          keras.metrics.SpecificityAtSensitivity(sensitivity=0.0, num_thresholds=200, name='specificity'),   # (tn / (tn + fp)).
+          keras.metrics.CosineSimilarity(name='cosine_similarity', axis=-1),
+          keras.metrics.KLDivergence(name='kl_divergence'),
+          #custom_loss_mask,
+          #custom_loss_function
+    ]
+
+    if (output_bias > -50):
+        print("output_bias passed in:", output_bias)
+        use_bias_sel = True
+        output_bias = keras.initializers.Constant(output_bias)
+        clf = Sequential([
+                Dense(units=16, activation='relu', input_shape=(train_features.shape[-1],)),
+                Dropout(0.50),
+                Dense(units=1, activation='sigmoid', use_bias=use_bias_sel, bias_initializer=output_bias),
+            ])
+    else:
+        print("output_bias not passed in")
+        use_bias_sel = False
+        clf = Sequential([
+                Dense(units=16, activation='relu', input_shape=(train_features.shape[-1],)),
+                Dropout(0.50),
+                Dense(units=1, activation='sigmoid'),
+            ])
+
+    clf.compile(
+        optimizer=keras.optimizers.Adam(lr=1e-3),
+        loss=keras.losses.BinaryCrossentropy(),
+        #loss=custom_loss_mask,
+        #loss=custom_loss_function,
+        metrics=METRICS)
+
+    return clf;
+
+
+# In[107]:
+
+
+# use model from imbalanced_data notebook
+
+BATCH_SIZE = 2048
+EPOCHS = 200
+neg, pos = np.bincount(train_labels)
+total = neg + pos
+initial_bias = np.log([pos/neg])
+weight_for_0 = (1 / neg)*(total)/2.0 
+weight_for_1 = (1 / pos)*(total)/2.0
+class_weight = {0: weight_for_0, 1: weight_for_1}
+print('initial_bias:', initial_bias)
+print('Weight for class 0: {:.2f}'.format(weight_for_0))
+print('Weight for class 1: {:.2f}'.format(weight_for_1));
+
+
+# In[108]:
+
+
+def RunModel(mon='val_auc', mod='max'):
+    #First Pass
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor=mon, verbose=0, patience=50, mode=mod, restore_best_weights=True)
+
+
+    clf = make_model(output_bias = initial_bias)    
+    clf.fit(train_features, train_labels, batch_size=BATCH_SIZE, verbose=0)#, shuffle=False)
+    #evaluate does not change or train the model, think this can be skipped unless we want the loss metric
+    results = clf.evaluate(train_features, train_labels, batch_size=BATCH_SIZE, verbose=0)
+    print("Loss: {:0.4f}".format(results[0]))
+
+    # 12/18 before removing these 4 lines
+    initial_weights = os.path.join(tempfile.mkdtemp(),'initial_weights')
+    clf.save_weights(initial_weights)
+
+    #clf = make_model()
+    #clf = make_model(output_bias = initial_bias)
+    clf = make_model(output_bias = initial_bias)
+    clf.load_weights(initial_weights)
+
+    weighted_history = clf.fit(
+        train_features,
+        train_labels,
+        batch_size=BATCH_SIZE,
+        epochs=EPOCHS,
+        callbacks = [early_stopping],
+        validation_data=(val_features, val_labels),
+        shuffle=False,
+        # The class weights go here
+        class_weight=class_weight
+    ) 
+
+    yhat_classes = clf.predict_classes(test_features, verbose=verbose, batch_size=BATCH_SIZE)
+    yhat_classes = yhat_classes[:, 0]
+    print("mon='", mon, "',mod='", mod)
+    print(metrics.confusion_matrix(test_labels, yhat_classes))
+    tn, fp, fn, tp = display_metrics(clf, train_features, test_features, train_labels, test_labels, yhat_classes, 'DNN Weighted')
+    dnn_weighted_auc = auc_roc_metrics(clf, test_features, test_labels, 'DNN-Weighted')
+    metrics_results['dnn_weighted'] = dnn_weighted_auc
+    return (weighted_history);
+
+
+# In[109]:
+
+
+with MyTimer():
+    #weighted_history = RunModel(mon='val_loss', mod='min');
+    weighted_history = RunModel(mon='val_auc', mod='max');
+
+
+# In[110]:
+
+
+plot_metrics(weighted_history)
+
+
+# In[111]:
+
+
+cm_results
+
+
+# In[112]:
 
 
 def create_autoencoder(input_dim):
@@ -1534,7 +2153,14 @@ def create_autoencoder(input_dim):
     return clf1
 
 
-# In[ ]:
+# In[113]:
+
+
+# show all variables in memory
+#%who or %whos
+
+
+# In[114]:
 
 
 clf = create_autoencoder(input_dim)
@@ -1544,7 +2170,8 @@ clf.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
 # create/fit model on the training dataset
 #clf.fit(X_train, y_train, batch_size=32, epochs=32, shuffle=True)#, validation_data=(X_test, X_test))
-clf.fit(X_train, y_train, batch_size=16, epochs=32, verbose=verbose, sample_weight=np.where(y_train == 1,2.0,1.0).flatten())
+clf.fit(X_train, y_train, batch_size=16, epochs=32, verbose=verbose, sample_weight=np.where(y_train == 1,2.0,1.0).flatten(), 
+        callbacks=callbacks_list, validation_data=(X_val, y_val))
 #clf.fit(X_train, y_train, batch_size=32, epochs=32, sample_weight=np.where(y_train == 1,0.1,1.0).flatten())
 #clf.fit(X_train, y_train, batch_size=15, epochs=5)
 
@@ -1568,7 +2195,7 @@ autoencoder_auc = auc_roc_metrics(clf, X_test, y_test, 'AutoEncoder')
 metrics_results['autoencoder'] = autoencoder_auc
 
 
-# In[ ]:
+# In[115]:
 
 
 print("AUC comparisons")
@@ -1703,7 +2330,7 @@ print(metrics_results)
 # 
 # 
 
-# In[ ]:
+# In[116]:
 
 
 plt.figure(figsize=(7,5),dpi=100)
@@ -1731,7 +2358,7 @@ plt.show()
 # number of Actual 0 and 1 in the final validation dataset for 2-test model
 # "1" total should match the FN + TP
 
-# In[ ]:
+# In[117]:
 
 
 y_val['Class'].value_counts()
@@ -1740,7 +2367,7 @@ y_val['Class'].value_counts()
 # number of Actual 0 and 1 in the final test dataset for all other models
 # "1" total should match the FN + TP
 
-# In[ ]:
+# In[118]:
 
 
 y_test['Class'].value_counts()
@@ -1748,7 +2375,7 @@ y_test['Class'].value_counts()
 
 # Here are the final results in tabular form. 
 
-# In[ ]:
+# In[119]:
 
 
 final_results = pd.DataFrame(cm_results, columns=('algo','TN','FP','FN','TP')) 
@@ -1767,14 +2394,14 @@ print(sort)
 sort.to_csv('c:\\DataScience\\Repo\\Imbalanced_data\\CreditCardFraud\\working\\results.csv', sep=',', mode='a', encoding='utf-8', header=True)
 
 
-# In[ ]:
+# In[120]:
 
 
 print('mean(Avg):', filtered['Avg'].mean())
 print(pt.get_params())
 
 
-# In[ ]:
+# In[121]:
 
 
 f = open('c:\\DataScience\\Repo\\Imbalanced_data\\CreditCardFraud\\working\\averages.txt', 'a+')
@@ -1783,7 +2410,7 @@ f.write("\n")
 f.close()
 
 
-# In[ ]:
+# In[122]:
 
 
 print("Start: ", StartTime)
@@ -1795,3 +2422,32 @@ print("End: ", datetime.datetime.now())
 # ![image.png](attachment:81cfe9b6-b296-4e68-bd5d-ba1b50f7a895.png)
 # 
 # reference: https://medium.com/rv-data/how-to-do-cost-sensitive-learning-61848bf4f5e7
+
+# v4 - optimize GB for 2-Step
+# 
+# use other models for 2-Step model, instead of GB. LR first
+
+# In[123]:
+
+
+# loading model that was saved in another script
+clf = keras.models.load_model("sampled_model")
+
+
+# In[ ]:
+
+
+get_ipython().run_cell_magic('javascript', '', 'Jupyter.notebook.session.delete();')
+
+
+# In[ ]:
+
+
+callbacks_list
+
+
+# In[ ]:
+
+
+
+

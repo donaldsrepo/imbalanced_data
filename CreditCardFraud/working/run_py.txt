@@ -1,0 +1,713 @@
+no display found. Using non-interactive Agg backend
+shell terminal found
+TERM: cygwin
+
+Current Working Directory  C:\DataScience\Repo\Imbalanced_data\CreditCardFraud\input\creditcardzip
+   Time        V1        V2        V3  ...       V27       V28  Amount  Class
+0   0.0 -1.359807 -0.072781  2.536347  ...  0.133558 -0.021053  149.62      0
+1   0.0  1.191857  0.266151  0.166480  ... -0.008983  0.014724    2.69      0
+2   1.0 -1.358354 -1.340163  1.773209  ... -0.055353 -0.059752  378.66      0
+3   1.0 -0.966272 -0.185226  1.792993  ...  0.062723  0.061458  123.50      0
+4   2.0 -1.158233  0.877737  1.548718  ...  0.219422  0.215153   69.99      0
+
+[5 rows x 31 columns]
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 284807 entries, 0 to 284806
+Data columns (total 31 columns):
+ #   Column  Non-Null Count   Dtype  
+---  ------  --------------   -----  
+ 0   Time    284807 non-null  float64
+ 1   V1      284807 non-null  float64
+ 2   V2      284807 non-null  float64
+ 3   V3      284807 non-null  float64
+ 4   V4      284807 non-null  float64
+ 5   V5      284807 non-null  float64
+ 6   V6      284807 non-null  float64
+ 7   V7      284807 non-null  float64
+ 8   V8      284807 non-null  float64
+ 9   V9      284807 non-null  float64
+ 10  V10     284807 non-null  float64
+ 11  V11     284807 non-null  float64
+ 12  V12     284807 non-null  float64
+ 13  V13     284807 non-null  float64
+ 14  V14     284807 non-null  float64
+ 15  V15     284807 non-null  float64
+ 16  V16     284807 non-null  float64
+ 17  V17     284807 non-null  float64
+ 18  V18     284807 non-null  float64
+ 19  V19     284807 non-null  float64
+ 20  V20     284807 non-null  float64
+ 21  V21     284807 non-null  float64
+ 22  V22     284807 non-null  float64
+ 23  V23     284807 non-null  float64
+ 24  V24     284807 non-null  float64
+ 25  V25     284807 non-null  float64
+ 26  V26     284807 non-null  float64
+ 27  V27     284807 non-null  float64
+ 28  V28     284807 non-null  float64
+ 29  Amount  284807 non-null  float64
+ 30  Class   284807 non-null  int64  
+dtypes: float64(30), int64(1)
+memory usage: 67.4 MB
+lam: 0
+Pre: There are 12 skewed numerical features to Box Cox transform
+Pre 4.3723215435489005
+Post: There are 10 skewed numerical features to Box Cox transform
+Post 5.924619556314968
+lam: 0.1
+Pre: There are 12 skewed numerical features to Box Cox transform
+Pre 4.3723215435489005
+Post: There are 10 skewed numerical features to Box Cox transform
+Post 5.752674910071598
+lam: 0.2
+Pre: There are 12 skewed numerical features to Box Cox transform
+Pre 4.3723215435489005
+Post: There are 10 skewed numerical features to Box Cox transform
+Post 5.591619281099101
+lam: 0.3
+Pre: There are 12 skewed numerical features to Box Cox transform
+Pre 4.3723215435489005
+Post: There are 10 skewed numerical features to Box Cox transform
+Post 5.4408440384190175
+lam: 0.4
+Pre: There are 12 skewed numerical features to Box Cox transform
+Pre 4.3723215435489005
+Post: There are 11 skewed numerical features to Box Cox transform
+Post 5.019947162619655
+lam: 0.5
+Pre: There are 12 skewed numerical features to Box Cox transform
+Pre 4.3723215435489005
+Post: There are 11 skewed numerical features to Box Cox transform
+Post 4.921398311940894
+lam: 0.6
+Pre: There are 12 skewed numerical features to Box Cox transform
+Pre 4.3723215435489005
+Post: There are 11 skewed numerical features to Box Cox transform
+Post 4.830561700841089
+lam: 0.7
+Pre: There are 12 skewed numerical features to Box Cox transform
+Pre 4.3723215435489005
+Post: There are 11 skewed numerical features to Box Cox transform
+Post 4.747077309201319
+lam: 0.8
+Pre: There are 12 skewed numerical features to Box Cox transform
+Pre 4.3723215435489005
+Post: There are 11 skewed numerical features to Box Cox transform
+Post 4.670619066610213
+lam: 1
+Pre: There are 12 skewed numerical features to Box Cox transform
+Pre 4.3723215435489005
+Post: There are 12 skewed numerical features to Box Cox transform
+Post 4.3723215435489
+lam: 2
+Pre: There are 12 skewed numerical features to Box Cox transform
+Pre 4.3723215435489005
+Post: There are 8 skewed numerical features to Box Cox transform
+Post 6.090156022452112
+lam: 3
+Pre: There are 12 skewed numerical features to Box Cox transform
+Pre 4.3723215435489005
+Post: There are 6 skewed numerical features to Box Cox transform
+Post 10.293405620825308
+Pre: There are 17 skewed numerical features to Box Cox transform
+Pre 3.514581911418132
+Post: There are 8 skewed numerical features to Box Cox transform
+Post 1.977383868458546
+
+Skew in numerical features: 
+
+
+Skew in numerical features: 
+
+There are 18 skewed numerical features to Box Cox transform
+
+Skew in numerical features: 
+
+There are 16 skewed numerical features to Box Cox transform
+Original
+[[     0      1]
+ [284315    492]]
+Train
+[[     0      1]
+ [199020    344]]
+Train
+[[    0     1]
+ [59704   106]]
+Train
+[[    0     1]
+ [25591    42]]
+0.9609095468985119
+0.9609095468985119
+Accuracy score (training): 0.949
+Accuracy score (validation): 0.961
+error
+Confusion Matrix:
+false positive pct: 3.9040294265173046
+tn  fp  fn  tp
+57369 2335 3 103
+[[57369  2335]
+ [    3   103]]
+Classification Report
+              precision    recall  f1-score   support
+
+           0       1.00      0.96      0.98     59704
+           1       0.04      0.97      0.08       106
+
+    accuracy                           0.96     59810
+   macro avg       0.52      0.97      0.53     59810
+weighted avg       1.00      0.96      0.98     59810
+
+Specificity = 0.9608903926035106
+Sensitivity = 0.9716981132075472
+LR:TEST | AUC Score: 0.994
+  No Skill : ROC AUC=0.500
+        LR : ROC AUC=0.994
+Logistic: f1=0.081 auc=0.507
+              precision    recall  f1-score   support
+
+           0       1.00      0.96      0.98     59704
+           1       0.05      0.95      0.09       106
+
+    accuracy                           0.96     59810
+   macro avg       0.52      0.96      0.53     59810
+weighted avg       1.00      0.96      0.98     59810
+
+0.9645711419495068
+Accuracy score (training): 1.000
+Accuracy score (validation): 0.965
+AxesSubplot(0.0519792,0.0756061;0.743417x0.897121)
+Confusion Matrix:
+false positive pct: 3.534525998996823
+tn  fp  fn  tp
+57590 2114 5 101
+[[57590  2114]
+ [    5   101]]
+Classification Report
+              precision    recall  f1-score   support
+
+           0       1.00      0.96      0.98     59704
+           1       0.05      0.95      0.09       106
+
+    accuracy                           0.96     59810
+   macro avg       0.52      0.96      0.53     59810
+weighted avg       1.00      0.96      0.98     59810
+
+Specificity = 0.9645919871365403
+Sensitivity = 0.9528301886792453
+RF:TEST | AUC Score: 0.995
+  No Skill : ROC AUC=0.500
+        RF : ROC AUC=0.995
+              precision    recall  f1-score   support
+
+           0       1.00      0.95      0.97     59704
+           1       0.03      0.95      0.06       106
+
+    accuracy                           0.95     59810
+   macro avg       0.52      0.95      0.52     59810
+weighted avg       1.00      0.95      0.97     59810
+
+0.9500250794181575
+Accuracy score (training): 0.946
+Accuracy score (validation): 0.950
+AxesSubplot(0.0519792,0.0756061;0.743417x0.897121)
+Confusion Matrix:
+false positive pct: 4.989132252131751
+tn  fp  fn  tp
+56720 2984 5 101
+[[56720  2984]
+ [    5   101]]
+Classification Report
+              precision    recall  f1-score   support
+
+           0       1.00      0.95      0.97     59704
+           1       0.03      0.95      0.06       106
+
+    accuracy                           0.95     59810
+   macro avg       0.52      0.95      0.52     59810
+weighted avg       1.00      0.95      0.97     59810
+
+Specificity = 0.9500200991558354
+Sensitivity = 0.9528301886792453
+RF2:TEST | AUC Score: 0.993
+  No Skill : ROC AUC=0.500
+       RF2 : ROC AUC=0.993
+              precision    recall  f1-score   support
+
+           0       1.00      0.99      1.00     59704
+           1       0.00      0.00      0.00       106
+
+    accuracy                           0.99     59810
+   macro avg       0.50      0.50      0.50     59810
+weighted avg       1.00      0.99      0.99     59810
+
+0.979351279050326
+Accuracy score (training): 0.946
+Accuracy score (validation): 0.979
+AxesSubplot(0.0519792,0.0756061;0.743417x0.897121)
+Confusion Matrix:
+false positive pct: 2.0514964052833973
+tn  fp  fn  tp
+58477 1227 8 98
+[[58477  1227]
+ [    8    98]]
+Classification Report
+              precision    recall  f1-score   support
+
+           0       1.00      0.98      0.99     59704
+           1       0.07      0.92      0.14       106
+
+    accuracy                           0.98     59810
+   macro avg       0.54      0.95      0.56     59810
+weighted avg       1.00      0.98      0.99     59810
+
+Specificity = 0.9794486131582474
+Sensitivity = 0.9245283018867925
+GB:TEST | AUC Score: 0.995
+  No Skill : ROC AUC=0.500
+        GB : ROC AUC=0.995
+0.9153653235244942
+Accuracy score (training): 0.962
+Accuracy score (validation): 0.915
+AxesSubplot(0.0519792,0.0756061;0.743417x0.897121)
+Confusion Matrix:
+false positive pct: 8.456779802708578
+tn  fp  fn  tp
+54646 5058 4 102
+[[54646  5058]
+ [    4   102]]
+Classification Report
+              precision    recall  f1-score   support
+
+           0       1.00      0.92      0.96     59704
+           1       0.02      0.96      0.04       106
+
+    accuracy                           0.92     59810
+   macro avg       0.51      0.94      0.50     59810
+weighted avg       1.00      0.92      0.95     59810
+
+Specificity = 0.9152820581535576
+Sensitivity = 0.9622641509433962
+GB1 Train **:TEST | AUC Score: 0.994
+  No Skill : ROC AUC=0.500
+GB1 Train ** : ROC AUC=0.994
+  No Skill : ROC AUC=0.500
+PredictedPositives : ROC AUC=0.980
+0.29069767441860467
+Accuracy score (training): 0.968
+Accuracy score (validation): 0.291
+AxesSubplot(0.125,0.11;0.775x0.77)
+Confusion Matrix:
+false positive pct: 70.93023255813954
+tn  fp  fn  tp
+1398 3660 0 102
+[[1398 3660]
+ [   0  102]]
+Classification Report
+              precision    recall  f1-score   support
+
+           0       1.00      0.28      0.43      5058
+           1       0.03      1.00      0.05       102
+
+    accuracy                           0.29      5160
+   macro avg       0.51      0.64      0.24      5160
+weighted avg       0.98      0.29      0.43      5160
+
+Specificity = 0.2763938315539739
+Sensitivity = 1.0
+GB2 Train **:TEST | AUC Score: 0.981
+  No Skill : ROC AUC=0.500
+GB2 Train ** : ROC AUC=0.981
+2 Step Final Confusion Matrix:
+56044 3660
+4 102
+0.9181133694846487
+Accuracy score (training): 0.915
+Accuracy score (validation): 0.918
+AxesSubplot(0.0519792,0.0756061;0.743417x0.897121)
+Confusion Matrix:
+false positive pct: 8.180860609370733
+tn  fp  fn  tp
+23494 2097 2 40
+[[23494  2097]
+ [    2    40]]
+Classification Report
+              precision    recall  f1-score   support
+
+           0       1.00      0.92      0.96     25591
+           1       0.02      0.95      0.04        42
+
+    accuracy                           0.92     25633
+   macro avg       0.51      0.94      0.50     25633
+weighted avg       1.00      0.92      0.96     25633
+
+Specificity = 0.9180571294595756
+Sensitivity = 0.9523809523809523
+GB1 Validate **:TEST | AUC Score: 0.986
+  No Skill : ROC AUC=0.500
+GB1 Validate ** : ROC AUC=0.986
+0.30369677117454374
+Accuracy score (training): 0.968
+Accuracy score (validation): 0.304
+AxesSubplot(0.0519792,0.0756061;0.743417x0.897121)
+Confusion Matrix:
+false positive pct: 69.58352831071596
+tn  fp  fn  tp
+610 1487 1 39
+[[ 610 1487]
+ [   1   39]]
+Classification Report
+              precision    recall  f1-score   support
+
+           0       1.00      0.29      0.45      2097
+           1       0.03      0.97      0.05        40
+
+    accuracy                           0.30      2137
+   macro avg       0.51      0.63      0.25      2137
+weighted avg       0.98      0.30      0.44      2137
+
+Specificity = 0.2908917501192179
+Sensitivity = 0.975
+GB2 Validate **:TEST | AUC Score: 0.966
+  No Skill : ROC AUC=0.500
+GB2 Validate ** : ROC AUC=0.966
+2 Step Final Confusion Matrix:
+24104 1487
+3 39
+Specificity = 0.9418936344808722
+Sensitivity = 0.9285714285714286
+2 Step Algorithm:TEST | AUC Score: 0.935
+  No Skill : ROC AUC=0.500
+    2-Step : ROC AUC=0.981
+Input shape: (29, 1)
+Model: "sequential_1"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+conv1d_1 (Conv1D)            (None, 20, 32)            352       
+_________________________________________________________________
+batch_normalization_1 (Batch (None, 20, 32)            128       
+_________________________________________________________________
+max_pooling1d_1 (MaxPooling1 (None, 10, 32)            0         
+_________________________________________________________________
+dropout_1 (Dropout)          (None, 10, 32)            0         
+_________________________________________________________________
+conv1d_2 (Conv1D)            (None, 9, 64)             4160      
+_________________________________________________________________
+batch_normalization_2 (Batch (None, 9, 64)             256       
+_________________________________________________________________
+max_pooling1d_2 (MaxPooling1 (None, 4, 64)             0         
+_________________________________________________________________
+dropout_2 (Dropout)          (None, 4, 64)             0         
+_________________________________________________________________
+flatten_1 (Flatten)          (None, 256)               0         
+_________________________________________________________________
+dense_1 (Dense)              (None, 64)                16448     
+_________________________________________________________________
+dropout_3 (Dropout)          (None, 64)                0         
+_________________________________________________________________
+dense_2 (Dense)              (None, 1)                 65        
+=================================================================
+Total params: 21,409
+Trainable params: 21,217
+Non-trainable params: 192
+_________________________________________________________________
+128/688 [====>.........................] - ETA: 0s688/688 [==============================] - 0s 130us/step
+
+And the Train Score is  100.0 %
+  128/59810 [..............................] - ETA: 1s 3328/59810 [>.............................] - ETA: 0s 6528/59810 [==>...........................] - ETA: 0s 9600/59810 [===>..........................] - ETA: 0s12800/59810 [=====>........................] - ETA: 0s15872/59810 [======>.......................] - ETA: 0s19072/59810 [========>.....................] - ETA: 0s22144/59810 [==========>...................] - ETA: 0s25344/59810 [===========>..................] - ETA: 0s28544/59810 [=============>................] - ETA: 0s31616/59810 [==============>...............] - ETA: 0s34688/59810 [================>.............] - ETA: 0s37376/59810 [=================>............] - ETA: 0s40448/59810 [===================>..........] - ETA: 0s43520/59810 [====================>.........] - ETA: 0s46592/59810 [======================>.......] - ETA: 0s49792/59810 [=======================>......] - ETA: 0s52864/59810 [=========================>....] - ETA: 0s56064/59810 [===========================>..] - ETA: 0s59136/59810 [============================>.] - ETA: 0s59810/59810 [==============================] - 1s 17us/step
+
+And the Test Score is  91.89433455467224 %
+Classification Report (CNN)
+              precision    recall  f1-score   support
+
+           0       1.00      0.92      0.96     59704
+           1       0.02      0.98      0.04       106
+
+    accuracy                           0.92     59810
+   macro avg       0.51      0.95      0.50     59810
+weighted avg       1.00      0.92      0.96     59810
+
+error
+error
+Confusion Matrix:
+false positive pct: 8.102324026082595
+tn  fp  fn  tp
+54858 4846 2 104
+[[54858  4846]
+ [    2   104]]
+Classification Report
+              precision    recall  f1-score   support
+
+           0       1.00      0.92      0.96     59704
+           1       0.02      0.98      0.04       106
+
+    accuracy                           0.92     59810
+   macro avg       0.51      0.95      0.50     59810
+weighted avg       1.00      0.92      0.96     59810
+
+Specificity = 0.9188329090178212
+Sensitivity = 0.9811320754716981
+CNN:TEST | AUC Score: 0.995
+  No Skill : ROC AUC=0.500
+       CNN : ROC AUC=0.995
+Model: "sequential_2"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+dense_3 (Dense)              (None, 16)                480       
+_________________________________________________________________
+dense_4 (Dense)              (None, 18)                306       
+_________________________________________________________________
+dropout_4 (Dropout)          (None, 18)                0         
+_________________________________________________________________
+dense_5 (Dense)              (None, 20)                380       
+_________________________________________________________________
+dense_6 (Dense)              (None, 24)                504       
+_________________________________________________________________
+dense_7 (Dense)              (None, 1)                 25        
+=================================================================
+Total params: 1,695
+Trainable params: 1,695
+Non-trainable params: 0
+_________________________________________________________________
+128/688 [====>.........................] - ETA: 0s688/688 [==============================] - 0s 41us/step
+
+And the Train Score is  96.94767594337463 %
+  128/59810 [..............................] - ETA: 0s12544/59810 [=====>........................] - ETA: 0s24832/59810 [===========>..................] - ETA: 0s37248/59810 [=================>............] - ETA: 0s49536/59810 [=======================>......] - ETA: 0s59810/59810 [==============================] - 0s 4us/step
+
+And the Test Score is  94.68817710876465 %
+Classification Report (DNN)
+              precision    recall  f1-score   support
+
+           0       1.00      0.95      0.97     59704
+           1       0.03      0.96      0.06       106
+
+    accuracy                           0.95     59810
+   macro avg       0.52      0.95      0.52     59810
+weighted avg       1.00      0.95      0.97     59810
+
+error
+error
+Confusion Matrix:
+false positive pct: 5.305132920916235
+tn  fp  fn  tp
+56531 3173 4 102
+[[56531  3173]
+ [    4   102]]
+Classification Report
+              precision    recall  f1-score   support
+
+           0       1.00      0.95      0.97     59704
+           1       0.03      0.96      0.06       106
+
+    accuracy                           0.95     59810
+   macro avg       0.52      0.95      0.52     59810
+weighted avg       1.00      0.95      0.97     59810
+
+Specificity = 0.9468544821117513
+Sensitivity = 0.9622641509433962
+DNN:TEST | AUC Score: 0.992
+  No Skill : ROC AUC=0.500
+       DNN : ROC AUC=0.992
+Model: "sequential_3"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+dense_8 (Dense)              (None, 16)                480       
+_________________________________________________________________
+dense_9 (Dense)              (None, 18)                306       
+_________________________________________________________________
+dense_10 (Dense)             (None, 1)                 19        
+=================================================================
+Total params: 805
+Trainable params: 805
+Non-trainable params: 0
+_________________________________________________________________
+128/688 [====>.........................] - ETA: 0s688/688 [==============================] - 0s 27us/step
+
+And the Train Score is  95.9302306175232 %
+  128/59810 [..............................] - ETA: 0s14464/59810 [======>.......................] - ETA: 0s29696/59810 [=============>................] - ETA: 0s43520/59810 [====================>.........] - ETA: 0s57472/59810 [===========================>..] - ETA: 0s59810/59810 [==============================] - 0s 4us/step
+
+And the Test Score is  95.38872838020325 %
+Classification Report (DNN Simple)
+              precision    recall  f1-score   support
+
+           0       1.00      0.95      0.98     59704
+           1       0.04      0.97      0.07       106
+
+    accuracy                           0.95     59810
+   macro avg       0.52      0.96      0.52     59810
+weighted avg       1.00      0.95      0.97     59810
+
+error
+error
+Confusion Matrix:
+false positive pct: 4.60625313492727
+tn  fp  fn  tp
+56949 2755 3 103
+[[56949  2755]
+ [    3   103]]
+Classification Report
+              precision    recall  f1-score   support
+
+           0       1.00      0.95      0.98     59704
+           1       0.04      0.97      0.07       106
+
+    accuracy                           0.95     59810
+   macro avg       0.52      0.96      0.52     59810
+weighted avg       1.00      0.95      0.97     59810
+
+Specificity = 0.9538556880611014
+Sensitivity = 0.9716981132075472
+DNN Simple:TEST | AUC Score: 0.994
+  No Skill : ROC AUC=0.500
+DNN-Simple : ROC AUC=0.994
+Model: "sequential_4"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+dense_11 (Dense)             (None, 16)                480       
+_________________________________________________________________
+dense_12 (Dense)             (None, 18)                306       
+_________________________________________________________________
+dropout_5 (Dropout)          (None, 18)                0         
+_________________________________________________________________
+dense_13 (Dense)             (None, 30)                570       
+_________________________________________________________________
+dense_14 (Dense)             (None, 28)                868       
+_________________________________________________________________
+dropout_6 (Dropout)          (None, 28)                0         
+_________________________________________________________________
+dense_15 (Dense)             (None, 30)                870       
+_________________________________________________________________
+dense_16 (Dense)             (None, 28)                868       
+_________________________________________________________________
+dropout_7 (Dropout)          (None, 28)                0         
+_________________________________________________________________
+dense_17 (Dense)             (None, 20)                580       
+_________________________________________________________________
+dense_18 (Dense)             (None, 24)                504       
+_________________________________________________________________
+dense_19 (Dense)             (None, 1)                 25        
+=================================================================
+Total params: 5,071
+Trainable params: 5,071
+Non-trainable params: 0
+_________________________________________________________________
+128/688 [====>.........................] - ETA: 0s688/688 [==============================] - 0s 62us/step
+
+And the Train Score is  97.67441749572754 %
+  128/59810 [..............................] - ETA: 0s10752/59810 [====>.........................] - ETA: 0s18048/59810 [========>.....................] - ETA: 0s27520/59810 [============>.................] - ETA: 0s35456/59810 [================>.............] - ETA: 0s40064/59810 [===================>..........] - ETA: 0s50688/59810 [========================>.....] - ETA: 0s59810/59810 [==============================] - 0s 6us/step
+
+And the Test Score is  94.1615104675293 %
+Classification Report (DNN complex)
+              precision    recall  f1-score   support
+
+           0       1.00      0.94      0.97     59704
+           1       0.03      0.97      0.06       106
+
+    accuracy                           0.94     59810
+   macro avg       0.51      0.96      0.51     59810
+weighted avg       1.00      0.94      0.97     59810
+
+error
+error
+Confusion Matrix:
+false positive pct: 5.8334726634342084
+tn  fp  fn  tp
+56215 3489 3 103
+[[56215  3489]
+ [    3   103]]
+Classification Report
+              precision    recall  f1-score   support
+
+           0       1.00      0.94      0.97     59704
+           1       0.03      0.97      0.06       106
+
+    accuracy                           0.94     59810
+   macro avg       0.51      0.96      0.51     59810
+weighted avg       1.00      0.94      0.97     59810
+
+Specificity = 0.9415617044084148
+Sensitivity = 0.9716981132075472
+DNN Complex:TEST | AUC Score: 0.981
+  No Skill : ROC AUC=0.500
+DNN-Complex : ROC AUC=0.981
+Model: "sequential_5"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+dense_20 (Dense)             (None, 15)                450       
+_________________________________________________________________
+dense_21 (Dense)             (None, 7)                 112       
+_________________________________________________________________
+dense_22 (Dense)             (None, 7)                 56        
+_________________________________________________________________
+dense_23 (Dense)             (None, 31)                248       
+_________________________________________________________________
+dense_24 (Dense)             (None, 1)                 32        
+=================================================================
+Total params: 898
+Trainable params: 898
+Non-trainable params: 0
+_________________________________________________________________
+ 32/688 [>.............................] - ETA: 0s688/688 [==============================] - 0s 43us/step
+
+And the Train Score is  96.65697813034058 %
+   32/59810 [..............................] - ETA: 3s 3744/59810 [>.............................] - ETA: 0s 6496/59810 [==>...........................] - ETA: 0s10560/59810 [====>.........................] - ETA: 0s14912/59810 [======>.......................] - ETA: 0s18080/59810 [========>.....................] - ETA: 0s22272/59810 [==========>...................] - ETA: 0s26560/59810 [============>.................] - ETA: 0s30880/59810 [==============>...............] - ETA: 0s33888/59810 [===============>..............] - ETA: 0s37600/59810 [=================>............] - ETA: 0s41984/59810 [====================>.........] - ETA: 0s46272/59810 [======================>.......] - ETA: 0s50624/59810 [========================>.....] - ETA: 0s54976/59810 [==========================>...] - ETA: 0s59296/59810 [============================>.] - ETA: 0s59810/59810 [==============================] - 1s 13us/step
+
+And the Test Score is  93.38739514350891 %
+Classification Report (AutoEncoder)
+              precision    recall  f1-score   support
+
+           0       1.00      0.93      0.97     59704
+           1       0.03      0.99      0.05       106
+
+    accuracy                           0.93     59810
+   macro avg       0.51      0.96      0.51     59810
+weighted avg       1.00      0.93      0.96     59810
+
+error
+error
+Confusion Matrix:
+false positive pct: 6.61093462631667
+tn  fp  fn  tp
+55750 3954 1 105
+[[55750  3954]
+ [    1   105]]
+Classification Report
+              precision    recall  f1-score   support
+
+           0       1.00      0.93      0.97     59704
+           1       0.03      0.99      0.05       106
+
+    accuracy                           0.93     59810
+   macro avg       0.51      0.96      0.51     59810
+weighted avg       1.00      0.93      0.96     59810
+
+Specificity = 0.9337732815221761
+Sensitivity = 0.9905660377358491
+AutoEncoder:TEST | AUC Score: 0.991
+  No Skill : ROC AUC=0.500
+AutoEncoder : ROC AUC=0.991
+AUC comparisons
+{'lr': 0.994, 'rf': 0.995, 'rf2': 0.993, 'gb': 0.995, 'gb1_train': 0.994, 'gb2_train': 0.981, 'gb1_validate': 0.986, 'gb2_validate': 0.966, '2-step': 0.981, 'cnn': 0.995, 'dnn': 0.992, 'dnn_simple': 0.994, 'dnn_complex': 0.981, 'autoencoder': 0.991}
+test, val, split settings
+0.3 0.3
+test, val, split sizes
+0.21 0.09
+           algo     TN    FP  FN   TP     SP     SE     Avg
+0            LR  57369  2335   3  103  0.961  0.972  0.9665
+11   DNN Simple  56949  2755   3  103  0.954  0.972  0.9630
+13  AutoEncoder  55750  3954   1  105  0.934  0.991  0.9625
+1            RF  57590  2114   5  101  0.965  0.953  0.9590
+12  DNN Complex  56215  3489   3  103  0.942  0.972  0.9570
+10          DNN  56531  3173   4  102  0.947  0.962  0.9545
+3            GB  58477  1227   8   98  0.979  0.925  0.9520
+2           RF2  56720  2984   5  101  0.950  0.953  0.9515
+9           CNN  54858  4846   2  104  0.919  0.981  0.9500
+8        2-Step  24104  1487   3   39  0.942  0.929  0.9355
+mean(Avg): 0.95515
+{'copy': True, 'method': 'yeo-johnson', 'standardize': False}
+Start:  2020-09-09 13:53:04.334944
+End:  2020-09-09 13:57:34.432094

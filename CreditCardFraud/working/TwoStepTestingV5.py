@@ -1,10 +1,16 @@
 # Import Libraries
+import os
 import warnings
 warnings.filterwarnings("ignore")
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-get_ipython().magic('matplotlib inline')
+if (os.environ.get('TERM','') == 'xterm-color'): 
+    get_ipython().magic('matplotlib inline')
+elif (os.environ.get('TERM','') == 'cygwin'):
+    print("shell terminal found")
+else: # 'cygwin'
+    print("no terminal found")
 import pandas_profiling as pp
 import seaborn as sns
 import os

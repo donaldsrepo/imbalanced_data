@@ -3,9 +3,6 @@
 
 # <h1 align='center' style='color:purple'>Credit Card Fraud - Imbalanced Data Set</h1>
 
-# Winning kaggle notebook: https://www.kaggle.com/c/ieee-fraud-detection/discussion/111284
-# https://www.kaggle.com/cdeotte/xgb-fraud-with-magic-0-9600
-# 
 # **Use Case:** Credit Card Fraud Detection
 # 
 #     Compare different common algorithms, develop and optimize a new 2 sequential/consecutive model algorithm to see if this can give better results
@@ -67,7 +64,6 @@
 
 # Import Libraries
 # try some of these ideas: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
-import datetime
 import numpy as np
 import pandas as pd
 
@@ -76,28 +72,17 @@ import matplotlib as mpl
 if os.environ.get('DISPLAY','') == '':                                                                               
     print('no display found. Using non-interactive Agg backend')                                                     
     mpl.use('Agg')                                                                    
-    
+        
 import matplotlib.pyplot as plt
-if (os.environ.get('TERM','') == 'xterm-color'): 
-    get_ipython().magic('matplotlib inline')
-elif (os.environ.get('TERM','') == 'cygwin'):
-    print("shell terminal found")
-else: # 'cygwin'
-    print("no terminal found")
-    
+get_ipython().magic('matplotlib inline')
 import pandas_profiling as pp
 import seaborn as sns
-
-from scipy import stats
-from scipy.stats import norm, skew, kurtosis, boxcox #for some statistics
-from scipy.special import boxcox1p, inv_boxcox, inv_boxcox1p
 
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import metrics
-from sklearn.pipeline import Pipeline
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
 from sklearn.metrics import roc_curve
@@ -109,27 +94,18 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import cohen_kappa_score
-from sklearn.ensemble import GradientBoostingClassifier, IsolationForest
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.utils.class_weight import compute_sample_weight
-from sklearn.preprocessing import PolynomialFeatures, StandardScaler, MinMaxScaler, RobustScaler, PowerTransformer, Normalizer
+from sklearn.preprocessing import StandardScaler
 from matplotlib import pyplot
 import zipfile
 
 import tensorflow as tf
 
-StartTime = datetime.datetime.now()
-
-
-# In[2]:
-
-
-#print(os.environ)
-print('TERM:', os.environ.get('TERM',''))
-
 
 # Always like to include a timer function to see where my code is running slow or taking most of the run time
 
-# In[3]:
+# In[2]:
 
 
 class MyTimer():
@@ -148,7 +124,7 @@ class MyTimer():
         print(msg.format(time=runtime))
 
 
-# In[4]:
+# In[3]:
 
 
 def CalcPct(df,title):
@@ -159,7 +135,7 @@ def CalcPct(df,title):
     return calc_pct
 
 
-# In[5]:
+# In[4]:
 
 
 colab = os.environ.get('COLAB_GPU', '10')
@@ -172,7 +148,7 @@ else:
 
 # Setup to run on Google Colab and Kaggle platforms
 
-# In[6]:
+# In[5]:
 
 
 # Check if Google Colab path exists
@@ -188,7 +164,7 @@ else:
 print("Current Working Directory " , os.getcwd())
 
 
-# In[7]:
+# In[6]:
 
 
 verbose=0
@@ -202,44 +178,43 @@ df = pd.read_csv('https://storage.googleapis.com/download.tensorflow.org/data/cr
 # 
 # Doing some initial data exploration
 
-# In[8]:
+# In[7]:
 
 
 # Check the data, make sure it loaded okay
 print(df.head())
 
 
-# In[9]:
+# In[8]:
 
 
 # Check the datatypes of the Data set 
 df.info()
 
 
-# In[10]:
+# In[9]:
 
 
 # Check the Uniqueness
 df.nunique()
 
 
-# In[11]:
+# In[10]:
 
 
 # Check for missing data
 df.isnull().sum()
 
 
-# In[12]:
+# In[11]:
 
 
 # Check basic Statistics
-# looks like StandardScaler was performed on this dataset, mean is close to 0 for all columns
 
 df.describe(include ='all')
 
 
-# In[13]:
+# In[12]:
 
 
 # Check the Class Imbalance of the Data 
@@ -247,7 +222,7 @@ df.describe(include ='all')
 df['Class'].value_counts()
 
 
-# In[14]:
+# In[13]:
 
 
 # Histograms of the features
@@ -266,7 +241,7 @@ plt.show()
 # 
 # ![image.png](attachment:2deb1518-2274-4853-9694-97f893bfa5b0.png)
 
-# In[15]:
+# In[14]:
 
 
 f = plt.figure(figsize=(19, 15))
@@ -275,12 +250,13 @@ plt.xticks(range(df.shape[1]), df.columns, fontsize=14, rotation=45)
 plt.yticks(range(df.shape[1]), df.columns, fontsize=14)
 cb = plt.colorbar()
 cb.ax.tick_params(labelsize=14)
-plt.title("Kendall'sCorrelation Matrix Full Data Set", fontsize=16)
+plt.title("Kendall's Correlation Matrix Full Data Set", fontsize=16)
+plt.show()
 
 
 # V21 and V22 show the highest tau-b score, will investigate this relationship later
 
-# In[16]:
+# In[15]:
 
 
 #try some data cleansing, Amount has a few high values, so try using the log of that column instead.
@@ -291,206 +267,16 @@ temp_df['Log_Amount'] = np.log(temp_df.pop('Amount')+0.001)
 df = temp_df.copy()
 
 
-# In[17]:
-
-
-from scipy.special import boxcox1p
-lam = [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,1,2,3]
-for i in lam:
-    print("lam:", i)
-    X = df.loc[:, df.columns != 'Class']
-    y = df.loc[:, df.columns == 'Class']
-    norm = MinMaxScaler().fit(X)
-    X = pd.DataFrame(norm.transform(X), index=X.index, columns=X.columns)
-    numeric_feats = X.dtypes[X.dtypes != "object"].index
-    skewed_feats = X[numeric_feats].apply(lambda x: skew(x.dropna())).sort_values(ascending=False)
-    skewness = pd.DataFrame({'Skew' :skewed_feats})
-    skewness = skewness[abs(skewness) > 2]
-    skewness = skewness[skewness.Skew == skewness.Skew]
-    print("Pre: There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
-    print("Pre", abs(skewness.Skew).mean())
-    skewed_features = skewness.index
-    lam_f = 0.0
-    for feat in skewed_features:
-        X[feat] = boxcox1p(X[feat], i)
-    numeric_feats = X.dtypes[X.dtypes != "object"].index
-    skewed_feats = X[numeric_feats].apply(lambda x: skew(x.dropna())).sort_values(ascending=False)
-    skewness = pd.DataFrame({'Skew' :skewed_feats})
-    skewness = skewness[abs(skewness) > 2]
-    skewness = skewness[skewness.Skew == skewness.Skew]
-    print("Post: There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
-    print("Post", abs(skewness.Skew).mean())
-
-
-# In[18]:
-
-
-from scipy.special import boxcox1p
-X = df.loc[:, df.columns != 'Class']
-y = df.loc[:, df.columns == 'Class']
-numeric_feats = X.dtypes[X.dtypes != "object"].index
-skewed_feats = X[numeric_feats].apply(lambda x: skew(x.dropna())).sort_values(ascending=False)
-skewness = pd.DataFrame({'Skew' :skewed_feats})
-skewness = skewness[abs(skewness) > 1.0]
-skewness = skewness[skewness.Skew == skewness.Skew]
-print("Pre: There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
-print("Pre", abs(skewness.Skew).mean())
-skewed_features = skewness.index
-pt = PowerTransformer(method='yeo-johnson').fit(X)
-X = pd.DataFrame(pt.transform(X), index=X.index, columns=X.columns)
-numeric_feats = X.dtypes[X.dtypes != "object"].index
-skewed_feats = X[numeric_feats].apply(lambda x: skew(x.dropna())).sort_values(ascending=False)
-skewness = pd.DataFrame({'Skew' :skewed_feats})
-skewness = skewness[abs(skewness) > 1.0]
-skewness = skewness[skewness.Skew == skewness.Skew]
-print("Post: There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
-print("Post", abs(skewness.Skew).mean())
-
-
-# In[19]:
-
-
-X.hist(bins=20, figsize=(20,15))
-plt.show()
-
-
-# In[20]:
-
-
-numeric_feats = X.dtypes[X.dtypes != "object"].index
-
-# Check the skew of all numerical features
-skewed_feats = X[numeric_feats].apply(lambda x: skew(x.dropna())).sort_values(ascending=False)
-print("\nSkew in numerical features: \n")
-skewness = pd.DataFrame({'Skew' :skewed_feats})
-skewness.head(10)
-
-
-# Need to normalize the data before using boxcox or log transforms as they don't work on negative and 0 values
-
-# In[21]:
-
-
-X = df.loc[:, df.columns != 'Class']
-y = df.loc[:, df.columns == 'Class']
-norm = MinMaxScaler().fit(X)
-X = pd.DataFrame(norm.transform(X), index=X.index, columns=X.columns)
-
-
-# Pre-transform skew
-
-# In[22]:
-
-
-numeric_feats = X.dtypes[X.dtypes != "object"].index
-
-# Check the skew of all numerical features
-skewed_feats = X[numeric_feats].apply(lambda x: skew(x.dropna())).sort_values(ascending=False)
-print("\nSkew in numerical features: \n")
-skewness = pd.DataFrame({'Skew' :skewed_feats})
-skewness.head(10)
-
-
-# In[23]:
-
-
-skewness = skewness[abs(skewness) > 0.75]
-skewness = skewness[skewness.Skew == skewness.Skew]
-print("There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
-
-
-# In[24]:
-
-
-skewness
-
-
-# In[25]:
-
-
-abs(skewness.Skew).mean()
-
-
-# In[26]:
-
-
-from scipy.special import boxcox1p
-skewed_features = skewness.index
-
-lam_f = 0.0
-for feat in skewed_features:
-    X[feat] = boxcox1p(X[feat], lam_f)
-
-
-# Post-transform skew
-
-# In[27]:
-
-
-numeric_feats = X.dtypes[X.dtypes != "object"].index
-
-# Check the skew of all numerical features
-skewed_feats = X[numeric_feats].apply(lambda x: skew(x.dropna())).sort_values(ascending=False)
-print("\nSkew in numerical features: \n")
-skewness = pd.DataFrame({'Skew' :skewed_feats})
-skewness.head(10)
-
-
-# In[28]:
-
-
-skewness = skewness[abs(skewness) > 0.75]
-skewness = skewness[skewness.Skew == skewness.Skew]
-print("There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
-
-
-# In[29]:
-
-
-skewness
-
-
-# In[30]:
-
-
-abs(skewness.Skew).mean()
-
-
-# In[31]:
-
-
-X.hist(bins=20, figsize=(20,15))
-plt.show()
-
-
-# so far the MinMaxScaler, boxcox1p and log1p transforms make the data more skewed...
-# just utilize the PowerTransformer instead, with yeo-johnson as there are many negative values
-
-# In[32]:
-
-
-X = df.loc[:, df.columns != 'Class']
-y = df.loc[:, df.columns == 'Class']
-
-a='''
-# this is incorrect approach, will lead to information leakage between train and test/val
-pt_tran = 1
-if (pt_tran == 1):
-    pt = PowerTransformer(method='yeo-johnson', standardize=False).fit(X)
-    X = pd.DataFrame(pt.transform(X), index=X.index, columns=X.columns)
-    #norm = MinMaxScaler().fit(X)
-    #X = pd.DataFrame(norm.transform(X), index=X.index, columns=X.columns)'''
-
-
 # Divide the dataset into features and labels and then into Train, Test and Validate datasets
 
-# In[33]:
+# In[16]:
 
 
 # divide full data into features and label
 spl1 = 0.3
 spl2 = 0.3
-
+X = df.loc[:, df.columns != 'Class']
+y = df.loc[:, df.columns == 'Class']
 OrigPct = CalcPct(y,"Original")
 
 strat = True
@@ -507,21 +293,7 @@ X_train, X_test1, y_train, y_test1 = train_test_split(X,y, test_size = spl1, ran
 X_test, X_val, y_test, y_val = train_test_split(X_test1,y_test1, test_size = spl2, random_state = None, shuffle=True)
 
 
-# The correct way to transform, fit the train data and transform train, test and val data based on the fit  
-# This does not have any effect on the performance of the model. Mean Specificity and Sensitivity are unchanged. Tested ~ 20 iterations
-
-# In[34]:
-
-
-pt_tran = 1
-if (pt_tran == 1):
-    pt = PowerTransformer(method='yeo-johnson', standardize=False).fit(X_train)
-    X_train = pd.DataFrame(pt.transform(X_train), index=X_train.index, columns=X_train.columns)
-    X_test  = pd.DataFrame(pt.transform(X_test), index=X_test.index, columns=X_test.columns)
-    X_val   = pd.DataFrame(pt.transform(X_val), index=X_val.index, columns=X_val.columns)
-
-
-# In[35]:
+# In[17]:
 
 
 f = plt.figure(figsize=(16, 12))
@@ -534,31 +306,50 @@ plt.title("Kendall's Correlation Matrix Initial Train Set", fontsize=16)
 plt.show()
 
 
-# In[36]:
+# In[18]:
 
 
 # prepare data for model, need to do this normalization and clipping separately for X_train, X_test and X_val 
-# to avoid any contamination between Train and Test/Validate datasets
-a='''
+# to avoid any contamination between Train and Test/Validate datasets. Also need to keep the order of the rows to match
+# the y label dataframes
+
 sc = StandardScaler()
 
-X_train = pd.DataFrame(sc.fit_transform(X_train),columns = X_train.columns)
-X_test = pd.DataFrame(sc.fit_transform(X_test),columns = X_test.columns)
-X_val = pd.DataFrame(sc.fit_transform(X_val),columns = X_val.columns)'''
+scaled_features = StandardScaler().fit_transform(X_train.values)
+X_train = pd.DataFrame(scaled_features, index=X_train.index, columns=X_train.columns)
+scaled_features = StandardScaler().fit_transform(X_test.values)
+X_test = pd.DataFrame(scaled_features, index=X_test.index, columns=X_test.columns)
+scaled_features = StandardScaler().fit_transform(X_val.values)
+X_val = pd.DataFrame(scaled_features, index=X_val.index, columns=X_val.columns)
 
-a='''
-X_train = sc.fit_transform(X_train)
-X_test = sc.transform(X_test)
-X_val = sc.transform(X_val)'''
-
-a='''
 # handle any extreme fliers, set to 5 or -5
 X_train = np.clip(X_train, -5, 5)
 X_test = np.clip(X_test, -5, 5)
-X_val = np.clip(X_val, -5, 5)'''
+X_val = np.clip(X_val, -5, 5)
 
 
-# In[37]:
+# In[19]:
+
+
+f = plt.figure(figsize=(16, 12))
+plt.matshow(X_train.corr(method='kendall'), fignum=f.number) # pearson or spearman are also available
+plt.xticks(range(X_train.shape[1]), X_train.columns, fontsize=14, rotation=45)
+plt.yticks(range(X_train.shape[1]), X_train.columns, fontsize=14)
+cb = plt.colorbar()
+cb.ax.tick_params(labelsize=14)
+plt.title("Kendall's Correlation Matrix Normalized [and Clipped] Train Set", fontsize=16)
+plt.show()
+
+
+# In[20]:
+
+
+# Check basic Statistics after normalizing and clipping data
+
+X_train.describe(include ='all')
+
+
+# In[21]:
 
 
 class_names=[0,1] # name  of classes 1=fraudulent transaction
@@ -573,7 +364,7 @@ zeros, ones = np.bincount(y_train['Class'])
 
 # Investigate the high tau-b value between V21 and V22
 
-# In[38]:
+# In[22]:
 
 
 # Form np arrays of labels and features for jointplot charts
@@ -600,7 +391,7 @@ _ = plt.suptitle("Negative distribution")
 
 # For a imbalanced sampling strategy, I will be using undersampling in my project as i think this is the best approach for this type of data
 
-# In[39]:
+# In[23]:
 
 
 # find the number of minority (value=1) samples in our train set so we can down-sample our majority to it
@@ -624,9 +415,22 @@ y_train = y_train.loc[undersample_ind]
 y_train = np.array(y_train).flatten()
 
 
+# In[24]:
+
+
+f = plt.figure(figsize=(16, 12))
+plt.matshow(X_train.corr(method='kendall'), fignum=f.number) # pearson or spearman are also available
+plt.xticks(range(X_train.shape[1]), X_train.columns, fontsize=14, rotation=45)
+plt.yticks(range(X_train.shape[1]), X_train.columns, fontsize=14)
+cb = plt.colorbar()
+cb.ax.tick_params(labelsize=14)
+plt.title("Kendall's Correlation Matrix Undersampled, Normalized [and Clipped] Train Set", fontsize=16)
+plt.show()
+
+
 # Create some calculation and visualization functions to show the results
 
-# In[40]:
+# In[25]:
 
 
 def visualize(Actual, Pred, Algo):
@@ -650,7 +454,7 @@ def visualize(Actual, Pred, Algo):
     plt.show()
 
 
-# In[41]:
+# In[26]:
 
 
 def display_metrics(model_name, train_features, test_features, train_label, test_label, pred, algo):
@@ -688,7 +492,7 @@ def display_metrics(model_name, train_features, test_features, train_label, test
     return tn, fp, fn, tp
 
 
-# In[42]:
+# In[27]:
 
 
 def auc_roc_metrics(model, test_features, test_labels, algo): # model object, features, actual labels, name of algorithm
@@ -703,7 +507,7 @@ def auc_roc_metrics(model, test_features, test_labels, algo): # model object, fe
     return model_auc
 
 
-# In[43]:
+# In[28]:
 
 
 def auc_roc_metrics_plots(model_probs, ns_probs, test_labels, algo):
@@ -733,7 +537,7 @@ def auc_roc_metrics_plots(model_probs, ns_probs, test_labels, algo):
     return model_auc
 
 
-# In[44]:
+# In[29]:
 
 
 # Define our custom loss function
@@ -745,7 +549,7 @@ def focal_loss(y_true, y_pred):
     return -K.sum(alpha * K.pow(1. - pt_1, gamma) * K.log(pt_1))-K.sum((1-alpha) * K.pow( pt_0, gamma) * K.log(1. - pt_0))
 
 
-# In[45]:
+# In[30]:
 
 
 def prediction_cutoff(model, test_features, cutoff):
@@ -759,7 +563,7 @@ def prediction_cutoff(model, test_features, cutoff):
     return predicted
 
 
-# In[46]:
+# In[31]:
 
 
 metrics_results = {}
@@ -768,15 +572,16 @@ cm_results = []
 cr_results = []
 
 
-# In[47]:
+# In[32]:
 
 
-X_train
+X_train.hist(bins=20, figsize=(20,15))
+plt.show()
 
 
 # run Logistic Regression model first
 
-# In[48]:
+# In[33]:
 
 
 lr = LogisticRegression()
@@ -790,7 +595,7 @@ lr_Pred = prediction_cutoff(lr, X_test, 0.5) # 0.5 is the default cutoff for a l
 
 # Show the results of this model
 
-# In[49]:
+# In[34]:
 
 
 print(metrics.accuracy_score(y_test, lr_Pred))
@@ -800,7 +605,7 @@ lr_auc = auc_roc_metrics(lr, X_test, y_test, 'LR')
 metrics_results['lr'] = lr_auc
 
 
-# In[50]:
+# In[35]:
 
 
 # useful for unbalanced data, maybe include later in metrics summary for all models
@@ -824,12 +629,30 @@ pyplot.show()
 
 # Next try the Random Forest model
 
-# In[51]:
+# In[36]:
 
 
-rf = RandomForestClassifier(n_estimators = 1000)
+#rf = RandomForestClassifier(n_estimators = 1000)
+
+# from my other blog on optimizing models using cross validation
+rf = RandomForestClassifier(bootstrap=True, ccp_alpha=0.0, class_weight=None,
+                       criterion='entropy', max_depth=None, max_features=None,
+                       max_leaf_nodes=None, max_samples=0.8,
+                       min_impurity_decrease=0.0, min_impurity_split=None,
+                       min_samples_leaf=10, min_samples_split=20,
+                       min_weight_fraction_leaf=0.0, n_estimators=100,
+                       n_jobs=None, oob_score=False, random_state=None,
+                       verbose=0, warm_start=False)
+
 rf.fit(X_train, y_train, sample_weight=np.where(y_train == 1,1.0,1.0).flatten())
+
 rf_Pred=rf.predict(X_test)
+
+
+# Show the results of this model
+
+# In[37]:
+
 
 #print(metrics.accuracy_score(y_test, y_pred))
 print(classification_report(y_test, rf_Pred))
@@ -839,58 +662,11 @@ rf_auc = auc_roc_metrics(rf, X_test, y_test, 'RF')
 metrics_results['rf'] = rf_auc
 
 
-# Show the results of this model
-
-# In[52]:
-
-
-rf2 = RandomForestClassifier(bootstrap=True, ccp_alpha=0.0, class_weight=None,
-                       criterion='entropy', max_depth=None, max_features=None,
-                       max_leaf_nodes=None, max_samples=0.8,
-                       min_impurity_decrease=0.0, min_impurity_split=None,
-                       min_samples_leaf=10, min_samples_split=20,
-                       min_weight_fraction_leaf=0.0, n_estimators=100,
-                       n_jobs=None, oob_score=False, random_state=None,
-                       verbose=0, warm_start=False)
-rf2.fit(X_train, y_train, sample_weight=np.where(y_train == 1,1.0,1.0).flatten())
-rf2_Pred=rf2.predict(X_test)
-
-#print(metrics.accuracy_score(y_test, y_pred))
-print(classification_report(y_test, rf2_Pred))
-tn, fp, fn, tp = display_metrics(rf2, X_train, X_test, y_train, y_test, rf2_Pred, 'RF2')
-visualize(y_test, rf2_Pred, 'RF2')
-rf2_auc = auc_roc_metrics(rf2, X_test, y_test, 'RF2')
-metrics_results['rf2'] = rf2_auc
-
-
-# Try an unsupervised method using anamoly detection
-
-# In[53]:
-
-
-rng = np.random.RandomState(42)
-iso = IsolationForest(max_samples=100, random_state=rng, contamination=0.999, n_estimators=100, max_features=1.0)
-iso.fit(X_train)
-iso_Pred = iso.predict(X_test)
-iso_Pred[iso_Pred == -1] = 0
-
-
-# In[54]:
-
-
-#print(metrics.accuracy_score(y_test, y_pred))
-print(classification_report(y_test, iso_Pred))
-#tn, fp, fn, tp = display_metrics(iso, X_train, X_test, y_train, y_test, iso_Pred, 'ISO')
-visualize(y_test, iso_Pred, 'ISO')
-#iso_auc = auc_roc_metrics(iso, X_test, y_test, 'ISO')
-#metrics_results['iso'] = iso_auc
-
-
 # There is some variability in the results from run to run, due to random sampling and imbalanced data. This time, LogisticRegression has better prediction capability, the RandomForestClassifier test has a lot more mistakes in the False Positive category, and even a few more mistakes in the False Negative category.
 
 # Now lets try a GradientBoosting Algorithm
 
-# In[55]:
+# In[38]:
 
 
 #setup model parameters, change some of the defaults based on benchmarking
@@ -912,7 +688,7 @@ predictions = gb_clf.predict(X_test)
 
 # Display the results
 
-# In[56]:
+# In[39]:
 
 
 tn, fp, fn, tp = display_metrics(gb_clf, X_train, X_test, y_train, y_test, predictions, 'GB')
@@ -942,7 +718,7 @@ metrics_results['gb'] = gb_auc
 # 
 # build the 1st model to be used later on the validate dataset
 
-# In[57]:
+# In[40]:
 
 
 #setup model parameters, change some of the defaults based on benchmarking
@@ -961,7 +737,7 @@ gb_clf1.fit( X_train, y_train, sample_weight=np.where(y_train == 1,3.6,1.4) ) # 
 predictions = gb_clf1.predict(X_test) 
 
 
-# In[58]:
+# In[41]:
 
 
 algo = 'GB1 Train **'
@@ -975,7 +751,7 @@ metrics_results['gb1_train'] = gb1_auc
 
 # Add 1st model prediction column to X_test for filtering
 
-# In[59]:
+# In[42]:
 
 
 X_test['Prediction'] = predictions
@@ -983,7 +759,7 @@ X_test['Prediction'] = predictions
 
 # select rows with prediction of 1
 
-# In[60]:
+# In[43]:
 
 
 yes_ind = X_test[X_test['Prediction'] == 1].index
@@ -991,36 +767,25 @@ yes_ind = X_test[X_test['Prediction'] == 1].index
 
 # Create 2nd train dataset from 1st dataset where the prediction was 1
 
-# In[61]:
+# In[44]:
 
 
 X2_test = X_test.loc[yes_ind]
 y2_test = y_test.loc[yes_ind]
 
 
-# In[62]:
-
-
-y_test
-
-
 # clean up the X_test dataset for future modeling, means remove the Prediction column
 
-# In[63]:
+# In[45]:
 
 
 X_test = X_test.drop(['Prediction'], axis=1)
-
-
-# In[64]:
-
-
 X2_test = X2_test.drop(['Prediction'], axis=1)
 
 
 # Look at the prediction values from the first model (preda_1) for the rows with a predicted label of 0
 
-# In[65]:
+# In[46]:
 
 
 proba = gb_clf1.predict_proba(X2_test) 
@@ -1032,7 +797,7 @@ plt.show()
 
 # Then we look at the ROC curve
 
-# In[66]:
+# In[47]:
 
 
 algo = 'PredictedPositives'
@@ -1043,7 +808,7 @@ auc_roc_metrics_plots(proba[:,1], ns_probs, test_labels, algo)
 
 # Next we build the 2nd model to be used model later on the validate dataset and look at the output
 
-# In[67]:
+# In[48]:
 
 
 #setup model parameters, change some of the defaults based on benchmarking
@@ -1090,7 +855,7 @@ plt.xlabel('Predicted label')
 
 # Now that we have built the 2 models from the test dataset, run the untouched validate dataset through both of them to get an unbiased result to compare against
 
-# In[68]:
+# In[49]:
 
 
 # run the validate dataset through the first model
@@ -1104,7 +869,7 @@ X1_val_final['Proba_1'] = predictions_proba1[:,1]
 #X_val = X_val.sort_index(axis = 0) 
 
 
-# In[ ]:
+# In[50]:
 
 
 # adding this
@@ -1116,7 +881,7 @@ gb1_auc = auc_roc_metrics(gb_clf1, X_val, y_val, algo)
 metrics_results['gb1_validate'] = gb1_auc
 
 
-# In[ ]:
+# In[51]:
 
 
 
@@ -1148,7 +913,7 @@ X_val_final.loc[X_val_final['Proba_2'].isnull(),'Proba_2'] = X_val_final['Proba_
 X_val = X_val.drop(['Prediction'], axis=1)
 
 
-# In[ ]:
+# In[52]:
 
 
 algo = 'GB2 Validate **'
@@ -1188,7 +953,7 @@ cm_results.append([algo, (tn+tn1), fp, (fn+fn1), tp])
 #two_step_auc = auc_roc_metrics(gb_clf, X_test, y_test, '2-Step')
 
 
-# In[ ]:
+# In[53]:
 
 
 # try to combine the 2 models into one AUC score, however not sure that the proba values from 2 different models can be combined 
@@ -1205,7 +970,7 @@ metrics_results['2-step'] = two_step_auc
 cr_results.append([algo, classification_report(test_labels, model_pred)])
 
 
-# In[ ]:
+# In[54]:
 
 
 y=np.reshape(test_labels.to_numpy(), -1)
@@ -1217,7 +982,7 @@ roc.append([algo, fpr, tpr, thresholds])
 
 # Next will try a few Neural Networks
 
-# In[ ]:
+# In[55]:
 
 
 import keras
@@ -1240,7 +1005,7 @@ from keras.layers import Activation
 
 # Adding swish activation function code for possible use later, can compare to relu, etc
 
-# In[ ]:
+# In[56]:
 
 
 # create new activation function
@@ -1248,7 +1013,7 @@ def swish(x, beta = 1):
     return (x * sigmoid(beta * x))
 
 
-# In[ ]:
+# In[57]:
 
 
 # add this function to the list of Activation functions
@@ -1257,7 +1022,7 @@ get_custom_objects().update({'swish': Activation(swish)})
 
 # Create the models to be used layer, using Sequential()
 
-# In[ ]:
+# In[58]:
 
 
 def create_dnn(input_dim):
@@ -1273,7 +1038,7 @@ def create_dnn(input_dim):
     return clf1
 
 
-# In[ ]:
+# In[59]:
 
 
 def create_simple_dnn(input_dim):
@@ -1286,7 +1051,7 @@ def create_simple_dnn(input_dim):
     return clf1
 
 
-# In[ ]:
+# In[60]:
 
 
 def create_complex_dnn(input_dim):
@@ -1308,7 +1073,7 @@ def create_complex_dnn(input_dim):
     return clf1
 
 
-# In[ ]:
+# In[61]:
 
 
 def create_cnn(input_shape):
@@ -1334,7 +1099,7 @@ def create_cnn(input_shape):
 
 # run the CNN model
 
-# In[ ]:
+# In[62]:
 
 
 input_shape = (X_train.shape[1], 1)
@@ -1395,7 +1160,7 @@ cnn_auc = auc_roc_metrics(clf, X_test_arr, y_test_arr, 'CNN')
 metrics_results['cnn'] = cnn_auc
 
 
-# In[ ]:
+# In[63]:
 
 
 X_train.shape[1]
@@ -1403,7 +1168,7 @@ X_train.shape[1]
 
 # Now run the basic DNN (Deep Neural Network)
 
-# In[ ]:
+# In[64]:
 
 
 clf = create_dnn(input_dim)
@@ -1453,7 +1218,7 @@ metrics_results['dnn'] = dnn_auc
 
 # Look at simpler and more complex examples of a DNN for comparison
 
-# In[ ]:
+# In[65]:
 
 
 clf = create_simple_dnn(input_dim)
@@ -1487,7 +1252,7 @@ metrics_results['dnn_simple'] = dnn_simple_auc
 
 # This DNN is successful at reducing the FP/TP ratio. This is expected as a Neural Network can decide on its own rules to include based on the input data. Below I try other more and less complex methods, but so far the results are not as good.
 
-# In[ ]:
+# In[66]:
 
 
 clf = create_complex_dnn(input_dim)
@@ -1519,7 +1284,7 @@ dnn_complex_auc = auc_roc_metrics(clf, X_test, y_test, 'DNN-Complex')
 metrics_results['dnn_complex'] = dnn_complex_auc
 
 
-# In[ ]:
+# In[67]:
 
 
 def create_autoencoder(input_dim):
@@ -1534,7 +1299,7 @@ def create_autoencoder(input_dim):
     return clf1
 
 
-# In[ ]:
+# In[68]:
 
 
 clf = create_autoencoder(input_dim)
@@ -1568,7 +1333,7 @@ autoencoder_auc = auc_roc_metrics(clf, X_test, y_test, 'AutoEncoder')
 metrics_results['autoencoder'] = autoencoder_auc
 
 
-# In[ ]:
+# In[69]:
 
 
 print("AUC comparisons")
@@ -1703,7 +1468,7 @@ print(metrics_results)
 # 
 # 
 
-# In[ ]:
+# In[70]:
 
 
 plt.figure(figsize=(7,5),dpi=100)
@@ -1731,7 +1496,7 @@ plt.show()
 # number of Actual 0 and 1 in the final validation dataset for 2-test model
 # "1" total should match the FN + TP
 
-# In[ ]:
+# In[71]:
 
 
 y_val['Class'].value_counts()
@@ -1740,7 +1505,7 @@ y_val['Class'].value_counts()
 # number of Actual 0 and 1 in the final test dataset for all other models
 # "1" total should match the FN + TP
 
-# In[ ]:
+# In[72]:
 
 
 y_test['Class'].value_counts()
@@ -1748,7 +1513,7 @@ y_test['Class'].value_counts()
 
 # Here are the final results in tabular form. 
 
-# In[ ]:
+# In[73]:
 
 
 final_results = pd.DataFrame(cm_results, columns=('algo','TN','FP','FN','TP')) 
@@ -1762,36 +1527,13 @@ print(spl1,spl2)
 print('test, val, split sizes')
 print( (spl1-spl1*spl2), (spl1*spl2) )
 filtered = final_results[~final_results.algo.str.contains('a', regex= True, na=False)]
-sort = filtered.sort_values(filtered.columns[7], ascending = False)
+sort = filtered.sort_values(filtered.columns[7], ascending = False) 
 print(sort)
-sort.to_csv('c:\\DataScience\\Repo\\Imbalanced_data\\CreditCardFraud\\working\\results.csv', sep=',', mode='a', encoding='utf-8', header=True)
+sort.to_csv('results.csv', sep=',', mode='a', encoding='utf-8', header=True)
 
 
 # In[ ]:
 
 
-print('mean(Avg):', filtered['Avg'].mean())
-print(pt.get_params())
 
 
-# In[ ]:
-
-
-f = open('c:\\DataScience\\Repo\\Imbalanced_data\\CreditCardFraud\\working\\averages.txt', 'a+')
-f.write(str(filtered['Avg'].mean()))
-f.write("\n")
-f.close()
-
-
-# In[ ]:
-
-
-print("Start: ", StartTime)
-print("End: ", datetime.datetime.now())
-
-
-# things to try, calculate optimal weights
-# 
-# ![image.png](attachment:81cfe9b6-b296-4e68-bd5d-ba1b50f7a895.png)
-# 
-# reference: https://medium.com/rv-data/how-to-do-cost-sensitive-learning-61848bf4f5e7
